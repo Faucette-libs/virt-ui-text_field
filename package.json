@@ -1,0 +1,34 @@
+{
+  "name": "virt-ui-text_field",
+  "version": "0.0.1",
+  "description": "virt material ui text_field",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bakasho-libs/virt-ui-text_field.git"
+  },
+  "scripts": {
+    "example": "comn -f example/src/index.js -o example/index.js"
+  },
+  "main": "src/index.js",
+  "author": "Bakasho Team",
+  "license": "MIT",
+  "keywords": [
+    "virt-ui-text_field",
+    "virt-ui-text_field.js"
+  ],
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.2",
+    "grunt-jsbeautifier": "^0.2.7",
+    "virt-dom": "git://github.com/nathanfaucett/virt-dom.git"
+  },
+  "dependencies": {
+    "color": "git://github.com/nathanfaucett/color.git",
+    "css": "git://github.com/nathanfaucett/css.git",
+    "extend": "git://github.com/nathanfaucett/extend.git",
+    "prop_types": "git://github.com/nathanfaucett/prop_types.git",
+    "uuid": "git://github.com/nathanfaucett/uuid.git",
+    "virt": "git://github.com/nathanfaucett/virt.git"
+  }
+}

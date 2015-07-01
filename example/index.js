@@ -3960,7 +3960,7 @@ InputPrototype.__getRenderProps = function() {
     renderProps.defaultChecked = undefined;
     renderProps.defaultValue = undefined;
     renderProps.value = value != null ? value : initialValue;
-    
+
     renderProps.onChange = this.onChange;
     renderProps.onInput = this.onInput;
 
@@ -4169,7 +4169,8 @@ function focusNode(node) {
 function(require, exports, module, global) {
 
 var process = require(46);
-var virt = require(1);
+var virt = require(1),
+    has = require(11);
 
 
 var View = virt.View,
@@ -4193,7 +4194,13 @@ function TextArea(props, children, context) {
     }
 
     Component.call(this, props, children, context);
-
+    
+    this.onInput = function(e) {
+        return _this.__onInput(e);
+    };
+    this.onChange = function(e) {
+        return _this.__onChange(e);
+    };
     this.getValue = function(callback) {
         return _this.__getValue(callback);
     };
@@ -4214,6 +4221,28 @@ TextAreaPrototype.componentDidMount = function() {
     if (this.props.autoFocus) {
         this.focus();
     }
+};
+
+TextAreaPrototype.__update = function() {
+    var props = this.props;
+
+    if (props.value != null) {
+        this.__setValue(props.value = props.value);
+    }
+};
+
+TextAreaPrototype.__onInput = function(e) {
+    if (this.props.onInput) {
+        this.props.onInput(e);
+    }
+    this.__onChange(e);
+};
+
+TextAreaPrototype.__onChange = function(e) {
+    if (this.props.onChange) {
+        this.props.onChange(e);
+    }
+    this.__update();
 };
 
 TextAreaPrototype.__getValue = function(callback) {
@@ -4241,8 +4270,33 @@ TextAreaPrototype.__blur = function(callback) {
     }, callback);
 };
 
+TextAreaPrototype.__getRenderProps = function() {
+    var props = this.props,
+
+        value = props.value,
+        defaultValue = props.defaultValue,
+        initialValue = defaultValue != null ? defaultValue : null,
+
+        renderProps = {},
+        key;
+
+    for (key in props) {
+        if (has(props, key)) {
+            renderProps[key] = props[key];
+        }
+    }
+
+    renderProps.defaultValue = undefined;
+    renderProps.value = value != null ? value : initialValue;
+
+    renderProps.onChange = this.onChange;
+    renderProps.onInput = this.onInput;
+    
+    return renderProps;
+};
+
 TextAreaPrototype.render = function() {
-    return new View("textarea", null, null, this.props, this.children, null, null);
+    return new View("textarea", null, null, this.__getRenderProps(), this.children, null, null);
 };
 
 
@@ -7718,7 +7772,8 @@ var virt = require(1),
     color = require(152),
     propTypes = require(157),
     css = require(159),
-    extend = require(20);
+    extend = require(20),
+    TextArea = require(174);
 
 
 var TextFieldPrototype;
@@ -7740,6 +7795,9 @@ function TextField(props, children, context) {
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
+    this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
+        return _this.__onTextAreaHeightChange(e, height);
+    };
     this.onInputChange = function onInputChange(e) {
         return _this.__onInputChange(e);
     };
@@ -7881,6 +7939,14 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
     }
 
     this.setState(newState);
+};
+
+TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
+    var newHeight = height + 24;
+    if (this.props.floatingLabelText) {
+        newHeight += 24;
+    }
+    virtDOM.findDOMNode(this).style.height = newHeight + "px";
 };
 
 TextFieldPrototype.__onInputFocus = function(e) {
@@ -8125,7 +8191,11 @@ TextFieldPrototype.render = function() {
         children[children.length] = virt.cloneView(child, extend(inputProps, child.props));
     } else {
         children[children.length] = props.multiLine ? (
-            virt.createView("textarea", extend(inputProps, props))
+            virt.createView(TextArea, extend(inputProps, props, {
+                rows: props.rows,
+                onHeightChange: this.onTextAreaHeightChange,
+                textareaStyle: styles.textarea
+            }))
         ) : (
             virt.createView("input", extend(inputProps, props))
         );
@@ -10711,6 +10781,171 @@ StylesPrototype.setTransition = function() {
 
 StylesPrototype.setTextShadow = function() {
     return textShadow(this, Array_slice.call(arguments));
+};
+
+
+},
+function(require, exports, module, global) {
+
+var virt = require(1),
+    has = require(11),
+    virtDOM = require(66),
+    propTypes = require(157),
+    css = require(159),
+    extend = require(20);
+
+
+var TextAreaPrototype;
+
+
+module.exports = TextArea;
+
+
+function TextArea(props, children, context) {
+    var _this = this;
+
+    virt.Component.call(this, props, children, context);
+
+    this.state = {
+        height: props.rows * 24
+    };
+
+    this.onChange = function(e) {
+        return _this.__onChange(e);
+    };
+}
+virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
+
+TextArea.propTypes = {
+    onChange: propTypes.func,
+    onHeightChange: propTypes.func,
+    textareaStyle: propTypes.object,
+    rows: propTypes.number
+};
+
+TextArea.getDefaultProps = function() {
+    return {
+        rows: 1
+    };
+};
+
+TextAreaPrototype = TextArea.prototype;
+
+TextAreaPrototype.componentDidMount = function() {
+    this.__syncHeightWithShadow();
+};
+
+TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
+    if (nextProps.value !== this.props.value) {
+        this.__syncHeightWithShadow(nextProps.value);
+    }
+};
+
+TextAreaPrototype.setValue = function(value, callback) {
+    var _this = this;
+    this.refs.input.setValue(value, function(error) {
+        if (error) {
+            callback && callback(error);
+        } else {
+            callback && callback();
+        }
+    });
+    _this.__syncHeightWithShadow(value);
+};
+
+TextAreaPrototype.__syncHeightWithShadow = function(newValue, e) {
+    var shadow = virtDOM.findDOMNode(this.refs.shadow),
+        currentHeight = this.state.height,
+        newHeight;
+
+    if (newValue !== undefined) {
+        shadow.value = newValue;
+    }
+    newHeight = shadow.scrollHeight;
+
+    if (currentHeight !== newHeight) {
+        this.setState({
+            height: newHeight
+        });
+        if (this.props.onHeightChange) {
+            this.props.onHeightChange(e, newHeight);
+        }
+    }
+};
+
+TextAreaPrototype.__onChange = function(e) {
+    var props = this.props;
+
+    this.__syncHeightWithShadow(e.target.value, e);
+
+    if (has(props, "valueLink")) {
+        props.valueLink.requestChange(e.target.value);
+    }
+    if (props.onChange) {
+        props.onChange(e);
+    }
+};
+
+TextAreaPrototype.getStyles = function() {
+    var styles = {
+        root: {
+            width: "100%",
+            resize: "none",
+            overflow: "hidden",
+            font: "inherit",
+            padding: 0
+        },
+        textareaStyle: {
+            position: "absolute",
+            width: "100%",
+            resize: "none",
+            overflow: "hidden",
+            font: "inherit",
+            padding: 0
+        }
+    };
+
+    css.opacity(styles.textareaStyle, 0);
+
+    return styles;
+};
+
+TextAreaPrototype.render = function() {
+    var props = this.props,
+        styles = this.getStyles();
+
+    if (has(props, "valueLink")) {
+        props.value = props.valueLink.value;
+    }
+    if (props.disabled) {
+        props.style.cursor = "default";
+    }
+
+    return (
+        virt.createView("div", {
+                className: "virt-ui-TextField-TextArea",
+                style: props.style
+            },
+            virt.createView("textarea", {
+                ref: "shadow",
+                style: styles.textareaStyle,
+                tabIndex: "-1",
+                rows: props.rows,
+                defaultValue: props.defaultValue,
+                readOnly: true,
+                value: props.value,
+                valueLink: props.valueLink
+            }),
+            virt.createView("textarea", extend({}, props, {
+                ref: "input",
+                rows: props.rows,
+                style: extend({}, styles.root, {
+                    height: this.state.height + "px"
+                }, props.textareaStyle),
+                onChange: this.onChange
+            }))
+        )
+    );
 };
 
 

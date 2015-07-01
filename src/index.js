@@ -7,7 +7,8 @@ var virt = require("virt"),
     color = require("color"),
     propTypes = require("prop_types"),
     css = require("css"),
-    extend = require("extend");
+    extend = require("extend"),
+    TextArea = require("./TextArea");
 
 
 var TextFieldPrototype;
@@ -29,6 +30,9 @@ function TextField(props, children, context) {
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
+    this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
+        return _this.__onTextAreaHeightChange(e, height);
+    };
     this.onInputChange = function onInputChange(e) {
         return _this.__onInputChange(e);
     };
@@ -170,6 +174,14 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
     }
 
     this.setState(newState);
+};
+
+TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
+    var newHeight = height + 24;
+    if (this.props.floatingLabelText) {
+        newHeight += 24;
+    }
+    virtDOM.findDOMNode(this).style.height = newHeight + "px";
 };
 
 TextFieldPrototype.__onInputFocus = function(e) {
@@ -414,7 +426,11 @@ TextFieldPrototype.render = function() {
         children[children.length] = virt.cloneView(child, extend(inputProps, child.props));
     } else {
         children[children.length] = props.multiLine ? (
-            virt.createView("textarea", extend(inputProps, props))
+            virt.createView(TextArea, extend(inputProps, props, {
+                rows: props.rows,
+                onHeightChange: this.onTextAreaHeightChange,
+                textareaStyle: styles.textarea
+            }))
         ) : (
             virt.createView("input", extend(inputProps, props))
         );

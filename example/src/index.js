@@ -15,7 +15,7 @@ AppPrototype = App.prototype;
 AppPrototype.getChildContext = function() {
     return {
         muiTheme: {
-            fontFamily: "\"Times New Roman\", Times, serif",
+            fontFamily: '"Times New Roman\", Times, serif',
             styles: {
                 textField: {
                     textColor: "rgba(0, 0, 0, 0.87)",
@@ -35,9 +35,66 @@ AppPrototype.getChildContext = function() {
 AppPrototype.render = function() {
     return (
         virt.createView("div", {
-                className: "App"
+                className: "App",
+                style: {
+                    width: "800px"
+                }
             },
-            virt.createView(TextField)
+            virt.createView("div", {
+                    style: {
+                        width: "50%",
+                        float: "left"
+                    }
+                },
+                virt.createView(TextField, {
+                    hintText: "Hint Text"
+                }),
+                virt.createView(TextField, {
+                    hintText: "Hint Text",
+                    defaultValue: "Default Value"
+                }),
+                virt.createView(TextField, {
+                    hintText: "Hint Text (MultiLine)",
+                    multiLine: true
+                }),
+                virt.createView(TextField, {
+                    hintText: "Hint Text",
+                    errorText: "This field is required"
+                }),
+                virt.createView(TextField, {
+                    hintText: "Hint Text",
+                    defaultValue: "Text",
+                    errorText: "This field is required"
+                }),
+                virt.createView(TextField, {
+                    hintText: "Disabled Hint Text",
+                    disabled: true
+                }),
+                virt.createView(TextField, {
+                    hintText: "Disabled Hint Text",
+                    disabled: true,
+                    defaultValue: "Disabled With Value"
+                })
+            ),
+            virt.createView("div", {
+                    style: {
+                        width: "50%",
+                        float: "left"
+                    }
+                },
+                virt.createView(TextField, {
+                    hintText: "Disabled Hint Text",
+                    floatingLabelText: "Floating Label Text"
+                }),
+                virt.createView(TextField, {
+                        hintText: "Custom Child input (e.g. password)",
+                        floatingLabelText: "Custom Child input (e.g. password)"
+                    },
+                    virt.createView("input", {
+                        type: "password"
+                    })
+                )
+            )
         )
     );
 };

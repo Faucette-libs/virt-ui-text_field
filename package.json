@@ -24,11 +24,15 @@
     "virt-dom": "git://github.com/nathanfaucett/virt-dom.git"
   },
   "dependencies": {
+    "blur_node": "git://github.com/nathanfaucett/blur_node.git",
     "color": "git://github.com/nathanfaucett/color.git",
     "css": "git://github.com/nathanfaucett/css.git",
     "extend": "git://github.com/nathanfaucett/extend.git",
+    "focus_node": "git://github.com/nathanfaucett/focus_node.git",
+    "has": "git://github.com/nathanfaucett/has.git",
     "prop_types": "git://github.com/nathanfaucett/prop_types.git",
     "uuid": "git://github.com/nathanfaucett/uuid.git",
-    "virt": "git://github.com/nathanfaucett/virt.git"
+    "virt": "git://github.com/nathanfaucett/virt.git",
+    "virt-dom": "git://github.com/nathanfaucett/virt-dom.git"
   }
 }

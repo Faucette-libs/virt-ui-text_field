@@ -1,4 +1,8 @@
 var virt = require("virt"),
+    virtDOM = require("virt-dom"),
+    has = require("has"),
+    blurNode = require("blur_node"),
+    focusNode = require("focus_node"),
     uuid = require("uuid"),
     color = require("color"),
     propTypes = require("prop_types"),
@@ -13,17 +17,29 @@ module.exports = TextField;
 
 
 function TextField(props, children, context) {
-    var _this = this,
-        child = children[0],
-        stateProps = child ? child.props : props;
+    var _this = this;
 
     virt.Component.call(this, props, children, context);
 
     this.id = null;
 
     this.state = {
-        errorText: this.props.errorText,
+        focus: false,
+        errorText: props.errorText,
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
+    };
+
+    this.onInputChange = function onInputChange(e) {
+        return _this.__onInputChange(e);
+    };
+    this.onInputFocus = function onInputFocus(e) {
+        return _this.__onInputFocus(e);
+    };
+    this.onInputBlur = function onInputBlur(e) {
+        return _this.__onInputBlur(e);
+    };
+    this.onInputKeyDown = function InputKeyDown(e) {
+        return _this.__onInputKeyDown(e);
     };
 }
 virt.Component.extend(TextField, "virt-ui-TextField");
@@ -84,6 +100,144 @@ TextFieldPrototype.getId = function() {
     return id;
 };
 
+TextFieldPrototype.focus = function() {
+    focusNode(this.__getInputNode());
+};
+
+TextFieldPrototype.blur = function() {
+    blurNode(this.__getInputNode());
+};
+
+TextFieldPrototype.clearValue = function() {
+    this.setValue("");
+};
+
+TextFieldPrototype.setErrorText = function(newErrorText) {
+    if (process.env.NODE_ENV !== "production" && has(this.props, "errorText")) {
+        console.error("Cannot call TextField.setErrorText when errorText is defined as a property.");
+    } else if (this.isMounted()) {
+        this.setState({
+            errorText: newErrorText
+        });
+    }
+};
+
+function checkHasValue(value) {
+    return value !== "" && value != null;
+}
+
+TextFieldPrototype.setValue = function(newValue) {
+    if (process.env.NODE_ENV !== "production" && this.__isControlled()) {
+        console.error("Cannot call TextField.setValue when value or valueLink is defined as a property.");
+    } else if (this.isMounted()) {
+        if (this.props.multiLine) {
+            this.refs[this.__getRef()].setValue(newValue);
+        } else {
+            this.__getInputNode().value = newValue;
+        }
+
+        this.setState({
+            hasValue: checkHasValue(newValue)
+        });
+    }
+};
+
+TextFieldPrototype.getValue = function() {
+    return this.isMounted() ? this.__getInputNode().value : undefined;
+};
+
+TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren) {
+    var newState = {},
+        nextChild = nextChildren[0],
+        hasValueLinkProp, hasValueProp, hasNewDefaultValue;
+
+    newState.errorText = nextProps.errorText;
+
+    if (nextChild && nextChild.props) {
+        nextProps = nextChild.props;
+    }
+
+    hasValueLinkProp = nextProps.hasOwnProperty("valueLink");
+    hasValueProp = nextProps.hasOwnProperty("value");
+    hasNewDefaultValue = nextProps.defaultValue !== this.props.defaultValue;
+
+    if (hasValueLinkProp) {
+        newState.hasValue = nextProps.valueLink.value;
+    } else if (hasValueProp) {
+        newState.hasValue = nextProps.value;
+    } else if (hasNewDefaultValue) {
+        newState.hasValue = nextProps.defaultValue;
+    }
+
+    this.setState(newState);
+};
+
+TextFieldPrototype.__onInputFocus = function(e) {
+    var props = this.props;
+
+    if (!props.disabled) {
+        if (props.onFocus) {
+            props.onFocus(e);
+        }
+        this.setState({
+            focus: true
+        });
+    }
+};
+
+TextFieldPrototype.__onInputBlur = function(e) {
+    if (this.props.onBlur) {
+        this.props.onBlur(e);
+    }
+    this.setState({
+        focus: false
+    });
+};
+
+TextFieldPrototype.__onInputChange = function(e) {
+    var child = this.children[0],
+        props = this.props;
+
+    if (child && child.props.onChange) {
+        child.props.onChange(e);
+    }
+    if (props.onChange) {
+        props.onChange(e);
+    }
+    this.setState({
+        hasValue: checkHasValue(e.target.value)
+    });
+};
+
+TextFieldPrototype.__onInputKeyDown = function(e) {
+    if (e.keyCode === 13 && this.props.onEnterKeyDown) {
+        this.props.onEnterKeyDown(e);
+    }
+    if (this.props.onKeyDown) {
+        this.props.onKeyDown(e);
+    }
+};
+
+TextFieldPrototype.__getRef = function() {
+    var props = this.props;
+    return props.ref ? props.ref : "input";
+};
+
+TextFieldPrototype.__getInput = function() {
+    var ref = this.refs[this.__getRef()],
+        props = this.props;
+    return (props.children || props.multiLine) ? ref.__getInput() : ref;
+};
+
+TextFieldPrototype.__getInputNode = function() {
+    return virtDOM.findDOMNode(this.__getInput());
+};
+
+TextFieldPrototype.__isControlled = function() {
+    var props = this.props;
+    return has(props, "value") || has(props, "valueLink");
+};
+
 TextFieldPrototype.getTheme = function() {
     return this.context.muiTheme.styles.textField;
 };
@@ -103,7 +257,7 @@ TextFieldPrototype.getStyles = function() {
             root: {
                 fontSize: "16px",
                 lineHeight: "24px",
-                width: props.fullWidth ? "100%" : 256,
+                width: props.fullWidth ? "100%" : "256px",
                 height: ((props.rows - 1) * 24 + (props.floatingLabelText ? 72 : 48)) + "px",
                 display: "inline-block",
                 position: "relative",
@@ -137,9 +291,9 @@ TextFieldPrototype.getStyles = function() {
                 borderBottom: "solid 1px " + theme.borderColor,
                 position: "absolute",
                 width: "100%",
-                bottom: 8,
-                margin: 0,
-                height: 0
+                bottom: "8px",
+                margin: "0px",
+                height: "0px"
             },
             underlineAfter: {
                 position: "absolute",
@@ -182,7 +336,7 @@ TextFieldPrototype.getStyles = function() {
     css.transform(styles.focusUnderline, "scaleX(0)");
     css.transition(styles.focusUnderline, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
 
-    if (state.isFocused) {
+    if (state.focus) {
         styles.floatingLabel.color = theme.focusColor;
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.transform(styles.focusUnderline, "scaleX(1)");
@@ -196,16 +350,19 @@ TextFieldPrototype.getStyles = function() {
 
     if (props.floatingLabelText) {
         styles.hint.top = "24px";
-        css.opacity(styles.hint, 0);
         css.boxSizing(styles.input, "border-box");
-        if (state.isFocused && !state.hasValue) styles.hint.opacity = 1;
+        if (state.focus && !state.hasValue) {
+            css.opacity(styles.hint, 1);
+        } else {
+            css.opacity(styles.hint, 0);
+        }
     }
 
     if (props.style && props.style.height) {
         styles.hint.lineHeight = props.style.height;
     }
 
-    if (state.errorText && state.isFocused) {
+    if (state.errorText && state.focus) {
         styles.floatingLabel.color = theme.errorColor;
     }
     if (props.floatingLabelText && !props.multiLine) {
@@ -221,13 +378,72 @@ TextFieldPrototype.getStyles = function() {
 };
 
 TextFieldPrototype.render = function() {
-    var styles = this.getStyles();
+    var state = this.state,
+        props = this.props,
+        styles = this.getStyles(),
+        child = this.children[0],
+        id = this.getId(),
+        inputProps = {
+            id: id,
+            ref: this.__getRef(),
+            style: extend({}, styles.input, props.inputStyle),
+            onBlur: this.onInputBlur,
+            onFocus: this.onInputFocus,
+            disabled: props.disabled,
+            onKeyDown: this.onInputKeyDown
+        },
+        children = [];
 
-    console.log(styles);
+    if (props.floatingLabelText) {
+        children[children.length] = virt.createView("label", {
+            "for": id,
+            style: extend({}, styles.floatingLabel, props.floatingLabelStyle)
+        }, props.floatingLabelText);
+    }
+    if (props.hintText) {
+        children[children.length] = virt.createView("div", {
+            style: extend({}, styles.hint)
+        }, props.hintText);
+    }
+
+
+    if (!has(props, "valueLink")) {
+        inputProps.onChange = this.onInputChange;
+    }
+    if (child) {
+        children[children.length] = virt.cloneView(child, extend(inputProps, child.props));
+    } else {
+        children[children.length] = props.multiLine ? (
+            virt.createView("textarea", extend(inputProps, props))
+        ) : (
+            virt.createView("input", extend(inputProps, props))
+        );
+    }
+
+    children[children.length] = props.disabled ? (
+        virt.createView("div", {
+            style: styles.underlineAfter
+        })
+    ) : (
+        virt.createView("hr", {
+            style: styles.underline
+        })
+    );
+
+    children[children.length] = virt.createView("hr", {
+        style: styles.focusUnderline
+    });
+
+    if (state.errorText) {
+        children[children.length] = virt.createView("div", {
+            style: styles.error
+        }, state.errorText);
+    }
 
     return (
         virt.createView("div", {
-            className: "virt-ui-TextField"
-        })
+            className: "virt-ui-TextField",
+            style: extend({}, styles.root, props.style)
+        }, children)
     );
 };

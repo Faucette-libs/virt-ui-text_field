@@ -34,10 +34,8 @@ TextArea.propTypes = {
     rows: propTypes.number
 };
 
-TextArea.getDefaultProps = function() {
-    return {
-        rows: 1
-    };
+TextArea.defaultProps = {
+    rows: 1
 };
 
 TextAreaPrototype = TextArea.prototype;

@@ -84,12 +84,10 @@ TextField.propTypes = {
     floatingLabelStyle: propTypes.object
 };
 
-TextField.getDefaultProps = function() {
-    return {
-        fullWidth: false,
-        type: "text",
-        rows: 1
-    };
+TextField.defaultProps = {
+    fullWidth: false,
+    type: "text",
+    rows: 1
 };
 
 TextFieldPrototype = TextField.prototype;

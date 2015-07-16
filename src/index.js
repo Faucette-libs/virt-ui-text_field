@@ -4,7 +4,6 @@ var virt = require("virt"),
     blurNode = require("blur_node"),
     focusNode = require("focus_node"),
     uuid = require("uuid"),
-    color = require("color"),
     propTypes = require("prop_types"),
     css = require("css"),
     extend = require("extend"),
@@ -260,13 +259,6 @@ TextFieldPrototype.getTheme = function() {
     return this.context.muiTheme.styles.textField;
 };
 
-var fade_color = color.create();
-
-function fade(style, amount) {
-    var value = fade_color;
-    return color.toRGBA(color.smul(value, color.fromStyle(value, style), amount));
-}
-
 TextFieldPrototype.getStyles = function() {
     var state = this.state,
         props = this.props,
@@ -361,7 +353,7 @@ TextFieldPrototype.getStyles = function() {
     }
 
     if (state.hasValue) {
-        styles.floatingLabel.color = fade(props.disabled ? theme.disabledTextColor : theme.floatingLabelColor, 0.5);
+        styles.floatingLabel.color = css.fade(props.disabled ? theme.disabledTextColor : theme.floatingLabelColor, 0.5);
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.opacity(styles.hint, 0);
     }
@@ -424,21 +416,25 @@ TextFieldPrototype.render = function() {
         }, props.hintText);
     }
 
-
     if (!has(props, "valueLink")) {
         inputProps.onChange = this.onInputChange;
     }
     if (child) {
-        children[children.length] = virt.cloneView(child, extend(inputProps, child.props));
+        children[children.length] = virt.cloneView(child, extend(inputProps, child.props, {
+            style: extend(inputProps.style, child.props.style)
+        }));
     } else {
         children[children.length] = props.multiLine ? (
             virt.createView(TextArea, extend(inputProps, props, {
+                style: extend(inputProps.style, props.style),
                 rows: props.rows,
                 onHeightChange: this.onTextAreaHeightChange,
                 textareaStyle: styles.textarea
             }))
         ) : (
-            virt.createView("input", extend(inputProps, props))
+            virt.createView("input", extend(inputProps, props, {
+                style: extend(inputProps.style, props.style)
+            }))
         );
     }
 

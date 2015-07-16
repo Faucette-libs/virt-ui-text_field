@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "blur_node": "git://github.com/nathanfaucett/blur_node.git",
-    "color": "git://github.com/nathanfaucett/color.git",
     "css": "git://github.com/nathanfaucett/css.git",
     "extend": "git://github.com/nathanfaucett/extend.git",
     "focus_node": "git://github.com/nathanfaucett/focus_node.git",

@@ -128,9 +128,13 @@ function checkHasValue(value) {
     return value !== "" && value != null;
 }
 
-TextFieldPrototype.setValue = function(newValue) {
+TextFieldPrototype.setValue = function(newValue, callback) {
     if (process.env.NODE_ENV !== "production" && this.__isControlled()) {
         console.error("Cannot call TextField.setValue when value or valueLink is defined as a property.");
+    }
+
+    if (callback) {
+        return this.__getInput().setValue(newValue, callback);
     } else if (this.isMounted()) {
         if (this.props.multiLine) {
             this.refs[this.__getRef()].setValue(newValue);
@@ -144,8 +148,12 @@ TextFieldPrototype.setValue = function(newValue) {
     }
 };
 
-TextFieldPrototype.getValue = function() {
-    return this.isMounted() ? this.__getInputNode().value : undefined;
+TextFieldPrototype.getValue = function(callback) {
+    if (callback) {
+        return this.__getInput().getValue(callback);
+    } else {
+        return this.isMounted() ? this.__getInputNode().value : undefined;
+    }
 };
 
 TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren) {

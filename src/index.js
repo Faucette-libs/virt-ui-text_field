@@ -1,8 +1,6 @@
 var virt = require("virt"),
     virtDOM = require("virt-dom"),
     has = require("has"),
-    blurNode = require("blur_node"),
-    focusNode = require("focus_node"),
     uuid = require("uuid"),
     propTypes = require("prop_types"),
     css = require("css"),
@@ -102,15 +100,15 @@ TextFieldPrototype.getId = function() {
 };
 
 TextFieldPrototype.focus = function() {
-    focusNode(this.__getInputNode());
+    this.__getInput().focus();
 };
 
 TextFieldPrototype.blur = function() {
-    blurNode(this.__getInputNode());
+    this.__getInput().blur();
 };
 
-TextFieldPrototype.clearValue = function() {
-    this.setValue("");
+TextFieldPrototype.clearValue = function(callback) {
+    this.setValue("", callback);
 };
 
 TextFieldPrototype.setErrorText = function(newErrorText) {
@@ -132,27 +130,19 @@ TextFieldPrototype.setValue = function(newValue, callback) {
         console.error("Cannot call TextField.setValue when value or valueLink is defined as a property.");
     }
 
-    if (callback) {
-        return this.__getInput().setValue(newValue, callback);
-    } else if (this.isMounted()) {
-        if (this.props.multiLine) {
-            this.refs[this.__getRef()].setValue(newValue);
-        } else {
-            this.__getInputNode().value = newValue;
-        }
+    this.setState({
+        hasValue: checkHasValue(newValue)
+    });
 
-        this.setState({
-            hasValue: checkHasValue(newValue)
-        });
+    if (this.props.multiLine) {
+        this.refs[this.__getRef()].setValue(newValue, callback);
+    } else {
+        this.__getInput().setValue(newValue, callback);
     }
 };
 
 TextFieldPrototype.getValue = function(callback) {
-    if (callback) {
-        return this.__getInput().getValue(callback);
-    } else {
-        return this.isMounted() ? this.__getInputNode().value : undefined;
-    }
+    return this.__getInput().getValue(callback);
 };
 
 TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren) {
@@ -241,9 +231,8 @@ TextFieldPrototype.__getRef = function() {
 };
 
 TextFieldPrototype.__getInput = function() {
-    var ref = this.refs[this.__getRef()],
-        props = this.props;
-    return (props.children || props.multiLine) ? ref.__getInput() : ref;
+    var ref = this.refs[this.__getRef()];
+    return (this.children.length || this.props.multiLine) ? ref.__getInput() : ref;
 };
 
 TextFieldPrototype.__getInputNode = function() {
@@ -251,8 +240,10 @@ TextFieldPrototype.__getInputNode = function() {
 };
 
 TextFieldPrototype.__isControlled = function() {
-    var props = this.props;
-    return has(props, "value") || has(props, "valueLink");
+    var localHas = has,
+        props = this.props;
+
+    return localHas(props, "value") || localHas(props, "valueLink");
 };
 
 TextFieldPrototype.getTheme = function() {

@@ -1,5 +1,4 @@
 var virt = require("virt"),
-    virtDOM = require("virt-dom"),
     has = require("has"),
     uuid = require("uuid"),
     propTypes = require("prop_types"),
@@ -24,6 +23,7 @@ function TextField(props, children, context) {
     this.state = {
         focus: false,
         errorText: props.errorText,
+        textAreaHeight: 0,
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
@@ -173,10 +173,14 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
 
 TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
     var newHeight = height + 24;
+
     if (this.props.floatingLabelText) {
         newHeight += 24;
     }
-    virtDOM.findDOMNode(this).style.height = newHeight + "px";
+
+    this.setState({
+        textAreaHeight: newHeight
+    });
 };
 
 TextFieldPrototype.__onInputFocus = function(e) {
@@ -233,10 +237,6 @@ TextFieldPrototype.__getRef = function() {
 TextFieldPrototype.__getInput = function() {
     var ref = this.refs[this.__getRef()];
     return (this.children.length || this.props.multiLine) ? ref.__getInput() : ref;
-};
-
-TextFieldPrototype.__getInputNode = function() {
-    return virtDOM.findDOMNode(this.__getInput());
 };
 
 TextFieldPrototype.__isControlled = function() {
@@ -373,6 +373,10 @@ TextFieldPrototype.getStyles = function() {
     if (state.errorText) {
         styles.focusUnderline.borderColor = theme.errorColor;
         css.transform(styles.focusUnderline, "scaleX(1)");
+    }
+
+    if (state.textAreaHeight) {
+        styles.root.height = state.textAreaHeight + "px";
     }
 
     return styles;

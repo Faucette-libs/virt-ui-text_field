@@ -1,6 +1,5 @@
 var virt = require("virt"),
     has = require("has"),
-    virtDOM = require("virt-dom"),
     propTypes = require("prop_types"),
     css = require("css"),
     extend = require("extend");
@@ -63,22 +62,34 @@ TextAreaPrototype.setValue = function(value, callback) {
 };
 
 TextAreaPrototype.__syncHeightWithShadow = function(newValue, e) {
-    var shadow = virtDOM.findDOMNode(this.refs.shadow),
-        currentHeight = this.state.height,
-        newHeight;
+    var _this = this;
+
+    function onSetValue(error) {
+        var shadow = _this.refs.shadow;
+
+        if (!error && shadow) {
+            shadow.emitMessage("virt.getViewProperty", {
+                id: shadow.getInternalId(),
+                property: "scrollHeight"
+            }, function onGetProperty(error, scrollHeight) {
+                var newHeight = scrollHeight;
+
+                if (_this.state.height !== newHeight) {
+                    _this.setState({
+                        height: newHeight
+                    });
+                    if (_this.props.onHeightChange) {
+                        _this.props.onHeightChange(e, newHeight);
+                    }
+                }
+            });
+        }
+    }
 
     if (newValue !== undefined) {
-        shadow.value = newValue;
-    }
-    newHeight = shadow.scrollHeight;
-
-    if (currentHeight !== newHeight) {
-        this.setState({
-            height: newHeight
-        });
-        if (this.props.onHeightChange) {
-            this.props.onHeightChange(e, newHeight);
-        }
+        this.refs.shadow.setValue(newValue, onSetValue);
+    } else {
+        onSetValue();
     }
 };
 

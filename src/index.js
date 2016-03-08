@@ -48,17 +48,14 @@ virt.Component.extend(TextField, "virt-ui-TextField");
 TextField.contextTypes = {
     muiTheme: propTypes.implement({
         fontFamily: propTypes.string.isRequired,
-        styles: propTypes.implement({
-            textField: propTypes.implement({
-                textColor: propTypes.string.isRequired,
-                hintColor: propTypes.string.isRequired,
-                floatingLabelColor: propTypes.string.isRequired,
-                disabledTextColor: propTypes.string.isRequired,
-                errorColor: propTypes.string.isRequired,
-                focusColor: propTypes.string.isRequired,
-                backgroundColor: propTypes.string.isRequired,
-                borderColor: propTypes.string.isRequired
-            }).isRequired
+        palette: propTypes.implement({
+            primaryTextColor: propTypes.string.isRequired,
+            secondaryTextColor: propTypes.string.isRequired,
+            disabledTextColor: propTypes.string.isRequired,
+            errorColor: propTypes.string.isRequired,
+            primaryColor: propTypes.string.isRequired,
+            secondaryColor: propTypes.string.isRequired,
+            accentColor: propTypes.string.isRequired
         }).isRequired
     }).isRequired
 };
@@ -246,14 +243,11 @@ TextFieldPrototype.__isControlled = function() {
     return localHas(props, "value") || localHas(props, "valueLink");
 };
 
-TextFieldPrototype.getTheme = function() {
-    return this.context.muiTheme.styles.textField;
-};
-
 TextFieldPrototype.getStyles = function() {
     var state = this.state,
         props = this.props,
-        theme = this.getTheme(),
+        muiTheme = this.context.muiTheme,
+        palette = muiTheme.palette,
         styles = {
             root: {
                 fontSize: "16px",
@@ -262,19 +256,19 @@ TextFieldPrototype.getStyles = function() {
                 height: ((props.rows - 1) * 24 + (props.floatingLabelText ? 72 : 48)) + "px",
                 display: "inline-block",
                 position: "relative",
-                fontFamily: this.context.muiTheme.fontFamily
+                fontFamily: muiTheme.fontFamily
             },
             error: {
                 position: "absolute",
                 bottom: "-10px",
                 fontSize: "12px",
                 lineHeight: "12px",
-                color: theme.errorColor
+                color: palette.errorColor
             },
             hint: {
                 position: "absolute",
                 lineHeight: "48px",
-                color: theme.hintColor
+                color: palette.secondaryTextColor
             },
             input: {
                 WebkitTapHighlightColor: "rgba(0,0,0,0)",
@@ -283,13 +277,13 @@ TextFieldPrototype.getStyles = function() {
                 height: "100%",
                 border: "none",
                 outline: "none",
-                backgroundColor: theme.backgroundColor,
-                color: props.disabled ? theme.disabledTextColor : theme.textColor,
+                backgroundColor: "transparent",
+                color: props.disabled ? palette.disabledTextColor : palette.primaryTextColor,
                 font: "inherit"
             },
             underline: {
                 border: "none",
-                borderBottom: "solid 1px " + theme.borderColor,
+                borderBottom: "solid 1px " + palette.disabledTextColor,
                 position: "absolute",
                 width: "100%",
                 bottom: "8px",
@@ -303,7 +297,7 @@ TextFieldPrototype.getStyles = function() {
                 userSelect: "none",
                 cursor: "default",
                 bottom: "8px",
-                borderBottom: "dotted 2px " + theme.disabledTextColor
+                borderBottom: "dotted 2px " + palette.disabledTextColor
             }
         };
 
@@ -332,19 +326,19 @@ TextFieldPrototype.getStyles = function() {
 
     styles.focusUnderline = extend({}, styles.underline, {
         borderBottom: "solid 2px",
-        borderColor: theme.focusColor
+        borderColor: palette.primaryColor
     });
     css.transform(styles.focusUnderline, "scaleX(0)");
     css.transition(styles.focusUnderline, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
 
     if (state.focus) {
-        styles.floatingLabel.color = theme.focusColor;
+        styles.floatingLabel.color = palette.primaryColor;
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.transform(styles.focusUnderline, "scaleX(1)");
     }
 
     if (state.hasValue) {
-        styles.floatingLabel.color = css.fade(props.disabled ? theme.disabledTextColor : theme.floatingLabelColor, 0.5);
+        styles.floatingLabel.color = css.fade(props.disabled ? palette.disabledTextColor : palette.primaryColor, 0.5);
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.opacity(styles.hint, 0);
     }
@@ -364,14 +358,14 @@ TextFieldPrototype.getStyles = function() {
     }
 
     if (state.errorText && state.focus) {
-        styles.floatingLabel.color = theme.errorColor;
+        styles.floatingLabel.color = palette.errorColor;
     }
     if (props.floatingLabelText && !props.multiLine) {
         styles.input.paddingTop = "26px";
     }
 
     if (state.errorText) {
-        styles.focusUnderline.borderColor = theme.errorColor;
+        styles.focusUnderline.borderColor = palette.errorColor;
         css.transform(styles.focusUnderline, "scaleX(1)");
     }
 

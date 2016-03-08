@@ -16,17 +16,16 @@ AppPrototype.getChildContext = function() {
     return {
         muiTheme: {
             fontFamily: '"Times New Roman\", Times, serif',
-            styles: {
-                textField: {
-                    textColor: "rgba(0, 0, 0, 0.87)",
-                    hintColor: "rgba(0, 0, 0, 0.261)",
-                    floatingLabelColor: "rgba(0, 0, 0, 0.87)",
-                    disabledTextColor: "rgba(0, 0, 0, 0.261)",
-                    errorColor: "#f44336",
-                    focusColor: "#00bcd4",
-                    backgroundColor: "transparent",
-                    borderColor: "#90a4ae"
-                }
+            palette: {
+                primaryColor: "#3E50B4",
+                secondaryColor: "#303F9F",
+                accentColor: "#FF3F80",
+                disabledColor: "rgba(0,0,0,0.12)",
+                primaryTextColor: "rgba(0,0,0,0.87)",
+                secondaryTextColor: "rgba(0,0,0,0.5)",
+                disabledTextColor: "rgba(0,0,0,0.38)",
+                lightText: "#FFFFFF",
+                errorColor: "#f44336"
             }
         }
     };

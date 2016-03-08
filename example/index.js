@@ -77,17 +77,16 @@ AppPrototype.getChildContext = function() {
     return {
         muiTheme: {
             fontFamily: '"Times New Roman\", Times, serif',
-            styles: {
-                textField: {
-                    textColor: "rgba(0, 0, 0, 0.87)",
-                    hintColor: "rgba(0, 0, 0, 0.261)",
-                    floatingLabelColor: "rgba(0, 0, 0, 0.87)",
-                    disabledTextColor: "rgba(0, 0, 0, 0.261)",
-                    errorColor: "#f44336",
-                    focusColor: "#00bcd4",
-                    backgroundColor: "transparent",
-                    borderColor: "#90a4ae"
-                }
+            palette: {
+                primaryColor: "#3E50B4",
+                secondaryColor: "#303F9F",
+                accentColor: "#FF3F80",
+                disabledColor: "rgba(0,0,0,0.12)",
+                primaryTextColor: "rgba(0,0,0,0.87)",
+                secondaryTextColor: "rgba(0,0,0,0.5)",
+                disabledTextColor: "rgba(0,0,0,0.38)",
+                lightText: "#FFFFFF",
+                errorColor: "#f44336"
             }
         }
     };
@@ -289,17 +288,14 @@ virt.Component.extend(TextField, "virt-ui-TextField");
 TextField.contextTypes = {
     muiTheme: propTypes.implement({
         fontFamily: propTypes.string.isRequired,
-        styles: propTypes.implement({
-            textField: propTypes.implement({
-                textColor: propTypes.string.isRequired,
-                hintColor: propTypes.string.isRequired,
-                floatingLabelColor: propTypes.string.isRequired,
-                disabledTextColor: propTypes.string.isRequired,
-                errorColor: propTypes.string.isRequired,
-                focusColor: propTypes.string.isRequired,
-                backgroundColor: propTypes.string.isRequired,
-                borderColor: propTypes.string.isRequired
-            }).isRequired
+        palette: propTypes.implement({
+            primaryTextColor: propTypes.string.isRequired,
+            secondaryTextColor: propTypes.string.isRequired,
+            disabledTextColor: propTypes.string.isRequired,
+            errorColor: propTypes.string.isRequired,
+            primaryColor: propTypes.string.isRequired,
+            secondaryColor: propTypes.string.isRequired,
+            accentColor: propTypes.string.isRequired
         }).isRequired
     }).isRequired
 };
@@ -487,14 +483,11 @@ TextFieldPrototype.__isControlled = function() {
     return localHas(props, "value") || localHas(props, "valueLink");
 };
 
-TextFieldPrototype.getTheme = function() {
-    return this.context.muiTheme.styles.textField;
-};
-
 TextFieldPrototype.getStyles = function() {
     var state = this.state,
         props = this.props,
-        theme = this.getTheme(),
+        muiTheme = this.context.muiTheme,
+        palette = muiTheme.palette,
         styles = {
             root: {
                 fontSize: "16px",
@@ -503,19 +496,19 @@ TextFieldPrototype.getStyles = function() {
                 height: ((props.rows - 1) * 24 + (props.floatingLabelText ? 72 : 48)) + "px",
                 display: "inline-block",
                 position: "relative",
-                fontFamily: this.context.muiTheme.fontFamily
+                fontFamily: muiTheme.fontFamily
             },
             error: {
                 position: "absolute",
                 bottom: "-10px",
                 fontSize: "12px",
                 lineHeight: "12px",
-                color: theme.errorColor
+                color: palette.errorColor
             },
             hint: {
                 position: "absolute",
                 lineHeight: "48px",
-                color: theme.hintColor
+                color: palette.secondaryTextColor
             },
             input: {
                 WebkitTapHighlightColor: "rgba(0,0,0,0)",
@@ -524,13 +517,13 @@ TextFieldPrototype.getStyles = function() {
                 height: "100%",
                 border: "none",
                 outline: "none",
-                backgroundColor: theme.backgroundColor,
-                color: props.disabled ? theme.disabledTextColor : theme.textColor,
+                backgroundColor: "transparent",
+                color: props.disabled ? palette.disabledTextColor : palette.primaryTextColor,
                 font: "inherit"
             },
             underline: {
                 border: "none",
-                borderBottom: "solid 1px " + theme.borderColor,
+                borderBottom: "solid 1px " + palette.disabledTextColor,
                 position: "absolute",
                 width: "100%",
                 bottom: "8px",
@@ -544,7 +537,7 @@ TextFieldPrototype.getStyles = function() {
                 userSelect: "none",
                 cursor: "default",
                 bottom: "8px",
-                borderBottom: "dotted 2px " + theme.disabledTextColor
+                borderBottom: "dotted 2px " + palette.disabledTextColor
             }
         };
 
@@ -573,19 +566,19 @@ TextFieldPrototype.getStyles = function() {
 
     styles.focusUnderline = extend({}, styles.underline, {
         borderBottom: "solid 2px",
-        borderColor: theme.focusColor
+        borderColor: palette.primaryColor
     });
     css.transform(styles.focusUnderline, "scaleX(0)");
     css.transition(styles.focusUnderline, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
 
     if (state.focus) {
-        styles.floatingLabel.color = theme.focusColor;
+        styles.floatingLabel.color = palette.primaryColor;
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.transform(styles.focusUnderline, "scaleX(1)");
     }
 
     if (state.hasValue) {
-        styles.floatingLabel.color = css.fade(props.disabled ? theme.disabledTextColor : theme.floatingLabelColor, 0.5);
+        styles.floatingLabel.color = css.fade(props.disabled ? palette.disabledTextColor : palette.primaryColor, 0.5);
         css.transform(styles.floatingLabel, "perspective(1px) scale(0.75) translate3d(2px, -28px, 0)");
         css.opacity(styles.hint, 0);
     }
@@ -605,14 +598,14 @@ TextFieldPrototype.getStyles = function() {
     }
 
     if (state.errorText && state.focus) {
-        styles.floatingLabel.color = theme.errorColor;
+        styles.floatingLabel.color = palette.errorColor;
     }
     if (props.floatingLabelText && !props.multiLine) {
         styles.input.paddingTop = "26px";
     }
 
     if (state.errorText) {
-        styles.focusUnderline.borderColor = theme.errorColor;
+        styles.focusUnderline.borderColor = palette.errorColor;
         css.transform(styles.focusUnderline, "scaleX(1)");
     }
 
@@ -1672,7 +1665,7 @@ function isUndefined(value) {
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/virt/node_modules/is_native/src/index.js */
+/* ../../node_modules/virt/node_modules/is_array/node_modules/is_native/src/index.js */
 
 var isFunction = require(16),
     isNullOrUndefined = require(20),
@@ -2392,7 +2385,7 @@ NodePrototype.__mountChildren = function(renderedView, transaction) {
 
     this.renderedChildren = renderedChildren;
 
-    renderedView.children = arrayMap(renderedView.children, function(child, index) {
+    renderedView.children = arrayMap(renderedView.children, function renderChild(child, index) {
         var node, id;
 
         if (isPrimitiveView(child)) {
@@ -10235,6 +10228,38 @@ propTypes.oneOf = function createOneOfCheck(expectedValues) {
     });
 };
 
+propTypes.arrayOf = function createArrayOfCheck(checkType) {
+
+    if (!isFunction(checkType)) {
+        throw new TypeError(
+            "Invalid Function Interface for arrayOf, checkType must be a function" +
+            "Function(props: Object, propName: String, callerName: String, locale) return Error or null."
+        );
+    }
+
+    return createTypeChecker(function validateArrayOf(props, propName, callerName, locale) {
+        var error = propTypes.array(props, propName, callerName, locale),
+            propValue, i, il;
+
+        if (error) {
+            return error;
+        } else {
+            propValue = props[propName];
+            i = -1;
+            il = propValue.length - 1;
+
+            while (i++ < il) {
+                error = checkType(propValue, i, callerName + "[" + i + "]", locale);
+                if (error) {
+                    return error;
+                }
+            }
+
+            return null;
+        }
+    });
+};
+
 propTypes.implement = function createImplementCheck(expectedInterface) {
     var key;
 
@@ -10544,7 +10569,7 @@ TextAreaPrototype.render = function() {
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/i18n/src/index.js */
+/* ../../node_modules/prop_types/node_modules/i18n/src/index.js */
 
 var isArray = require(17),
     isString = require(18),
@@ -10698,7 +10723,7 @@ function create(flatMode, throwMissingError) {
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/is_regexp/src/index.js */
+/* ../../node_modules/prop_types/node_modules/is_regexp/src/index.js */
 
 var isObject = require(30);
 
@@ -10744,7 +10769,7 @@ module.exports = {
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/format/src/index.js */
+/* ../../node_modules/prop_types/node_modules/format/src/index.js */
 
 var isString = require(18),
     isObject = require(30),
@@ -10868,7 +10893,7 @@ format.inspect = format.o;
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/fast_slice/src/index.js */
+/* ../../node_modules/prop_types/node_modules/fast_slice/src/index.js */
 
 var clamp = require(201),
     isNumber = require(21);
@@ -10898,7 +10923,7 @@ function fastSlice(array, offset) {
 
 },
 function(require, exports, module, undefined, global) {
-/* ../../node_modules/clamp/src/index.js */
+/* ../../node_modules/prop_types/node_modules/clamp/src/index.js */
 
 module.exports = clamp;
 

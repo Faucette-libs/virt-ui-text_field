@@ -29,6 +29,7 @@
     "extend": "git://github.com/nathanfaucett/extend.git",
     "has": "git://github.com/nathanfaucett/has.git",
     "prop_types": "git://github.com/nathanfaucett/prop_types.git",
+    "request_animation_frame": "git://github.com/nathanfaucett/request_animation_frame.git",
     "uuid": "git://github.com/nathanfaucett/uuid.git",
     "virt": "git://github.com/nathanfaucett/virt.git"
   }

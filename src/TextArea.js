@@ -2,7 +2,8 @@ var virt = require("virt"),
     has = require("has"),
     propTypes = require("prop_types"),
     css = require("css"),
-    extend = require("extend");
+    extend = require("extend"),
+    requestAnimationFrame = require("request_animation_frame");
 
 
 var TextAreaPrototype;
@@ -12,22 +13,16 @@ module.exports = TextArea;
 
 
 function TextArea(props, children, context) {
-    var _this = this;
 
     virt.Component.call(this, props, children, context);
 
     this.state = {
         height: props.rows * 24
     };
-
-    this.onChange = function(e) {
-        return _this.__onChange(e);
-    };
 }
 virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
 
 TextArea.propTypes = {
-    onChange: propTypes.func,
     onHeightChange: propTypes.func,
     textareaStyle: propTypes.object,
     rows: propTypes.number
@@ -40,69 +35,66 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
-    this.__syncHeightWithShadow();
+    this.__syncHeightWithShadow(this.props.value);
 };
 
-TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
-    if (nextProps.value !== this.props.value) {
-        this.__syncHeightWithShadow(nextProps.value);
+TextAreaPrototype.componentDidUpdate = function(prevProps) {
+    var _this = this,
+        value = this.props.value;
+
+    if (prevProps.value !== value) {
+        requestAnimationFrame(function onRequestAnimationFrame() {
+            _this.__syncHeightWithShadow(value);
+        });
     }
 };
 
 TextAreaPrototype.setValue = function(value, callback) {
     var _this = this;
-    this.refs.input.setValue(value, function(error) {
-        if (error) {
-            callback && callback(error);
-        } else {
-            callback && callback();
-        }
+
+    this.__syncHeightWithShadow(value, function onSyncHeightWithShadow() {
+        _this.refs.textareaInput.setValue(value, callback);
     });
-    _this.__syncHeightWithShadow(value);
 };
 
-TextAreaPrototype.__syncHeightWithShadow = function(newValue, e) {
+TextAreaPrototype.__getInput = function() {
+    return this.refs.textareaInput;
+};
+
+TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     var _this = this;
 
     function onSetValue(error) {
-        var shadow = _this.refs.shadow;
+        var textareaShadow = _this.refs.textareaShadow;
 
-        if (!error && shadow) {
-            shadow.emitMessage("virt.getViewProperty", {
-                id: shadow.getInternalId(),
+        if (!error && !!textareaShadow) {
+            textareaShadow.emitMessage("virt.getViewProperty", {
+                id: textareaShadow.getInternalId(),
                 property: "scrollHeight"
-            }, function onGetProperty(error, scrollHeight) {
-                var newHeight = scrollHeight;
-
-                if (_this.state.height !== newHeight) {
-                    _this.setState({
-                        height: newHeight
-                    });
-                    if (_this.props.onHeightChange) {
-                        _this.props.onHeightChange(e, newHeight);
+            }, function onGetProperty(error, newHeight) {
+                if (error) {
+                    callback && callback(error);
+                } else {
+                    if (_this.state.height !== newHeight) {
+                        if (_this.props.onHeightChange) {
+                            _this.props.onHeightChange(e, newHeight);
+                        }
+                        _this.setState({
+                            height: newHeight
+                        });
                     }
+                    callback && callback();
                 }
             });
+        } else {
+            callback(error);
         }
     }
 
     if (newValue !== undefined) {
-        this.refs.shadow.setValue(newValue, onSetValue);
+        this.refs.textareaShadow.setValue(newValue, onSetValue);
     } else {
         onSetValue();
-    }
-};
-
-TextAreaPrototype.__onChange = function(e) {
-    var props = this.props;
-
-    this.__syncHeightWithShadow(e.target.value, e);
-
-    if (has(props, "valueLink")) {
-        props.valueLink.requestChange(e.target.value);
-    }
-    if (props.onChange) {
-        props.onChange(e);
     }
 };
 
@@ -147,7 +139,7 @@ TextAreaPrototype.render = function() {
                 style: props.style
             },
             virt.createView("textarea", {
-                ref: "shadow",
+                ref: "textareaShadow",
                 style: styles.textareaStyle,
                 tabIndex: "-1",
                 rows: props.rows,
@@ -157,12 +149,11 @@ TextAreaPrototype.render = function() {
                 valueLink: props.valueLink
             }),
             virt.createView("textarea", extend({}, props, {
-                ref: "input",
+                ref: "textareaInput",
                 rows: props.rows,
                 style: extend({}, styles.root, {
                     height: this.state.height + "px"
-                }, props.textareaStyle),
-                onChange: this.onChange
+                }, props.textareaStyle)
             }))
         )
     );

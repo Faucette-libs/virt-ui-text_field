@@ -30,8 +30,8 @@ function TextField(props, children, context) {
     this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
         return _this.__onTextAreaHeightChange(e, height);
     };
-    this.onInputChange = function onInputChange(e) {
-        return _this.__onInputChange(e);
+    this.onChange = function onChange(e) {
+        return _this.__onChange(e);
     };
     this.onInputFocus = function onInputFocus(e) {
         return _this.__onInputFocus(e);
@@ -131,11 +131,7 @@ TextFieldPrototype.setValue = function(newValue, callback) {
         hasValue: checkHasValue(newValue)
     });
 
-    if (this.props.multiLine) {
-        this.refs[this.__getRef()].setValue(newValue, callback);
-    } else {
-        this.__getInput().setValue(newValue, callback);
-    }
+    this.__getInput().setValue(newValue, callback);
 };
 
 TextFieldPrototype.getValue = function(callback) {
@@ -153,16 +149,16 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
         nextProps = nextChild.props;
     }
 
-    hasValueLinkProp = nextProps.hasOwnProperty("valueLink");
-    hasValueProp = nextProps.hasOwnProperty("value");
+    hasValueLinkProp = has(nextProps, "valueLink");
+    hasValueProp = has(nextProps, "value");
     hasNewDefaultValue = nextProps.defaultValue !== this.props.defaultValue;
 
     if (hasValueLinkProp) {
-        newState.hasValue = nextProps.valueLink.value;
+        newState.hasValue = !!nextProps.valueLink.value;
     } else if (hasValueProp) {
-        newState.hasValue = nextProps.value;
+        newState.hasValue = !!nextProps.value;
     } else if (hasNewDefaultValue) {
-        newState.hasValue = nextProps.defaultValue;
+        newState.hasValue = !!nextProps.defaultValue;
     }
 
     this.setState(newState);
@@ -173,6 +169,10 @@ TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
 
     if (this.props.floatingLabelText) {
         newHeight += 24;
+    }
+
+    if (this.props.onHeightChange) {
+        this.props.onHeightChange(e, newHeight);
     }
 
     this.setState({
@@ -202,18 +202,25 @@ TextFieldPrototype.__onInputBlur = function(e) {
     });
 };
 
-TextFieldPrototype.__onInputChange = function(e) {
-    var child = this.children[0],
-        props = this.props;
+TextFieldPrototype.__onChange = function(e) {
+    var _this = this;
 
-    if (child && child.props.onChange) {
-        child.props.onChange(e);
-    }
-    if (props.onChange) {
-        props.onChange(e);
-    }
-    this.setState({
-        hasValue: checkHasValue(e.target.value)
+    e.componentTarget.getValue(function onGetValue(error, value) {
+        var child = _this.children[0],
+            props = _this.props;
+
+        if (!error) {
+            if (child && child.props.onChange) {
+                child.props.onChange(e);
+            }
+            if (props.onChange) {
+                props.onChange(e);
+            }
+
+            _this.setState({
+                hasValue: checkHasValue(value)
+            });
+        }
     });
 };
 
@@ -406,7 +413,7 @@ TextFieldPrototype.render = function() {
     }
 
     if (!has(props, "valueLink")) {
-        inputProps.onChange = this.onInputChange;
+        inputProps.onChange = this.onChange;
     }
     if (child) {
         children[children.length] = virt.cloneView(child, extend(inputProps, child.props, {

@@ -7,7 +7,17 @@ var AppPrototype;
 
 
 function App(props, children, context) {
+    var _this = this;
+    
     virt.Component.call(this, props, children, context);
+    
+    this.state = {
+        multiLine: ""
+    };
+    
+    this.onMultiLineChange = function(e) {
+        return _this.__onMultiLineChange(e);
+    };
 }
 virt.Component.extend(App, "App");
 AppPrototype = App.prototype;
@@ -29,6 +39,18 @@ AppPrototype.getChildContext = function() {
             }
         }
     };
+};
+
+AppPrototype.__onMultiLineChange = function(e) {
+    var _this = this;
+    
+    this.refs.multiLine.getValue(function onGetValue(error, value) {
+        if (!error) {
+            _this.setState({
+                multiLine: value
+            });
+        }
+    });
 };
 
 AppPrototype.render = function() {
@@ -54,6 +76,9 @@ AppPrototype.render = function() {
                 }),
                 virt.createView(TextField, {
                     hintText: "Hint Text (MultiLine)",
+                    ref: "multiLine",
+                    onChange: this.onMultiLineChange,
+                    value: this.state.multiLine,
                     multiLine: true
                 }),
                 virt.createView(TextField, {

@@ -35,7 +35,7 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
-    this.__syncHeightWithShadow(this.props.value);
+    this.setValue(this.props.value);
 };
 
 TextAreaPrototype.componentDidUpdate = function(prevProps) {
@@ -52,7 +52,7 @@ TextAreaPrototype.componentDidUpdate = function(prevProps) {
 TextAreaPrototype.setValue = function(value, callback) {
     var _this = this;
 
-    this.__syncHeightWithShadow(value, function onSyncHeightWithShadow() {
+    this.__syncHeightWithShadow(value, null, function onSyncHeightWithShadow() {
         _this.refs.textareaInput.setValue(value, callback);
     });
 };
@@ -65,30 +65,32 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     var _this = this;
 
     function onSetValue(error) {
-        var textareaShadow = _this.refs.textareaShadow;
+        requestAnimationFrame(function onRequestAnimationFrame() {
+            var textareaShadow = _this.refs.textareaShadow;
 
-        if (!error && !!textareaShadow) {
-            textareaShadow.emitMessage("virt.getViewProperty", {
-                id: textareaShadow.getInternalId(),
-                property: "scrollHeight"
-            }, function onGetProperty(error, newHeight) {
-                if (error) {
-                    callback && callback(error);
-                } else {
-                    if (_this.state.height !== newHeight) {
-                        if (_this.props.onHeightChange) {
-                            _this.props.onHeightChange(e, newHeight);
+            if (!error && !!textareaShadow) {
+                textareaShadow.emitMessage("virt.getViewProperty", {
+                    id: textareaShadow.getInternalId(),
+                    property: "scrollHeight"
+                }, function onGetProperty(error, newHeight) {
+                    if (error) {
+                        callback && callback(error);
+                    } else {
+                        if (_this.state.height !== newHeight) {
+                            if (_this.props.onHeightChange) {
+                                _this.props.onHeightChange(e, newHeight);
+                            }
+                            _this.setState({
+                                height: newHeight
+                            });
                         }
-                        _this.setState({
-                            height: newHeight
-                        });
+                        callback && callback();
                     }
-                    callback && callback();
-                }
-            });
-        } else {
-            callback(error);
-        }
+                });
+            } else {
+                callback(error);
+            }
+        });
     }
 
     if (newValue !== undefined) {

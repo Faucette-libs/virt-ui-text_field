@@ -94,7 +94,7 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     }
 
     if (newValue !== undefined) {
-        this.refs.textareaShadow.setValue(newValue, onSetValue);
+        this.refs.textareaShadow.setValue(newValue, false, onSetValue);
     } else {
         onSetValue();
     }

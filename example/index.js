@@ -328,6 +328,8 @@ TextField.contextTypes = {
 TextField.propTypes = {
     errorText: propTypes.string,
     floatingLabelText: propTypes.string,
+    focusUnderlineColor: propTypes.string,
+    underlineColor: propTypes.string,
     fullWidth: propTypes.bool,
     hintText: propTypes.string,
     id: propTypes.string,
@@ -555,7 +557,7 @@ TextFieldPrototype.getStyles = function() {
             },
             underline: {
                 border: "none",
-                borderBottom: "solid 1px " + palette.disabledTextColor,
+                borderBottom: "solid 1px " + (props.underlineColor || palette.disabledTextColor),
                 position: "absolute",
                 width: "100%",
                 bottom: "8px",
@@ -598,7 +600,7 @@ TextFieldPrototype.getStyles = function() {
 
     styles.focusUnderline = extend({}, styles.underline, {
         borderBottom: "solid 2px",
-        borderColor: palette.primaryColor
+        borderColor: props.focusUnderlineColor || palette.primaryColor
     });
     css.transform(styles.focusUnderline, "scaleX(0)");
     css.transition(styles.focusUnderline, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
@@ -5076,7 +5078,7 @@ InputPrototype.__getValue = function(callback) {
 InputPrototype.__setValue = function(value, focus, callback) {
     if (isFunction(focus)) {
         callback = focus;
-        focus = undefined;
+        focus = void(0);
     }
     this.emitMessage("virt.dom.Input.setValue", {
         id: this.getInternalId(),
@@ -5252,7 +5254,7 @@ TextAreaPrototype.__getValue = function(callback) {
 TextAreaPrototype.__setValue = function(value, focus, callback) {
     if (isFunction(focus)) {
         callback = focus;
-        focus = undefined;
+        focus = void(0);
     }
     if (focus === true) {
         throw "";
@@ -6000,7 +6002,7 @@ domCaret.get = function(node) {
     var activeElement = getActiveElement(),
         isFocused = activeElement === node,
         selection;
-        
+
     if (isTextInputElement(node)) {
         if (!isFocused) {
             focusNode(node);
@@ -6235,7 +6237,7 @@ var consts = exports,
         "topContextMenu",
         "topCopy",
         "topCut",
-        "topDoubleClick",
+        "topDblClick",
         "topDrag",
         "topDragEnd",
         "topDragEnter",
@@ -7162,7 +7164,7 @@ module.exports = {
     topCopy: SyntheticClipboardEvent,
     topCut: SyntheticClipboardEvent,
 
-    topDoubleClick: SyntheticMouseEvent,
+    topDblClick: SyntheticMouseEvent,
 
     topDrag: SyntheticDragEvent,
     topDragEnd: SyntheticDragEvent,

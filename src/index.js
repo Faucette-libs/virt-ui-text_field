@@ -63,6 +63,8 @@ TextField.contextTypes = {
 TextField.propTypes = {
     errorText: propTypes.string,
     floatingLabelText: propTypes.string,
+    focusUnderlineColor: propTypes.string,
+    underlineColor: propTypes.string,
     fullWidth: propTypes.bool,
     hintText: propTypes.string,
     id: propTypes.string,
@@ -290,7 +292,7 @@ TextFieldPrototype.getStyles = function() {
             },
             underline: {
                 border: "none",
-                borderBottom: "solid 1px " + palette.disabledTextColor,
+                borderBottom: "solid 1px " + (props.underlineColor || palette.disabledTextColor),
                 position: "absolute",
                 width: "100%",
                 bottom: "8px",
@@ -333,7 +335,7 @@ TextFieldPrototype.getStyles = function() {
 
     styles.focusUnderline = extend({}, styles.underline, {
         borderBottom: "solid 2px",
-        borderColor: palette.primaryColor
+        borderColor: props.focusUnderlineColor || palette.primaryColor
     });
     css.transform(styles.focusUnderline, "scaleX(0)");
     css.transition(styles.focusUnderline, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");

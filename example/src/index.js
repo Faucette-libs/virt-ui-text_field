@@ -12,11 +12,15 @@ function App(props, children, context) {
     virt.Component.call(this, props, children, context);
     
     this.state = {
-        multiLine: ""
+        multiLine: "",
+        multiLine2: "DEFAULT VALUE"
     };
     
     this.onMultiLineChange = function(e) {
         return _this.__onMultiLineChange(e);
+    };
+    this.onMultiLine2Change = function(e) {
+        return _this.__onMultiLine2Change(e);
     };
 }
 virt.Component.extend(App, "App");
@@ -25,7 +29,7 @@ AppPrototype = App.prototype;
 AppPrototype.getChildContext = function() {
     return {
         muiTheme: {
-            fontFamily: '"Times New Roman\", Times, serif',
+            fontFamily: 'Arial',
             palette: {
                 primaryColor: "#3E50B4",
                 secondaryColor: "#303F9F",
@@ -48,6 +52,17 @@ AppPrototype.__onMultiLineChange = function(e) {
         if (!error) {
             _this.setState({
                 multiLine: value
+            });
+        }
+    });
+};
+AppPrototype.__onMultiLine2Change = function(e) {
+    var _this = this;
+    
+    this.refs.multiLine2.getValue(function onGetValue(error, value) {
+        if (!error) {
+            _this.setState({
+                multiLine2: value
             });
         }
     });
@@ -79,6 +94,12 @@ AppPrototype.render = function() {
                     ref: "multiLine",
                     onChange: this.onMultiLineChange,
                     value: this.state.multiLine,
+                    multiLine: true
+                }),
+                virt.createView(TextField, {
+                    ref: "multiLine2",
+                    onChange: this.onMultiLine2Change,
+                    value: this.state.multiLine2,
                     multiLine: true
                 }),
                 virt.createView(TextField, {

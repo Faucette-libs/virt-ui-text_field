@@ -27,8 +27,8 @@ function TextField(props, children, context) {
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
-    this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
-        return _this.__onTextAreaHeightChange(e, height);
+    this.onTextAreaHeightChange = function onTextAreaHeightChange(height) {
+        return _this.__onTextAreaHeightChange(height);
     };
     this.onChange = function onChange(e) {
         return _this.__onChange(e);
@@ -166,7 +166,7 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
     this.setState(newState);
 };
 
-TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
+TextFieldPrototype.__onTextAreaHeightChange = function(height) {
     var newHeight = height + 24;
 
     if (this.props.floatingLabelText) {
@@ -174,7 +174,7 @@ TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
     }
 
     if (this.props.onHeightChange) {
-        this.props.onHeightChange(e, newHeight);
+        this.props.onHeightChange(newHeight);
     }
 
     this.setState({
@@ -378,7 +378,7 @@ TextFieldPrototype.getStyles = function() {
         css.transform(styles.focusUnderline, "scaleX(1)");
     }
 
-    if (state.textAreaHeight) {
+    if (state.textAreaHeight !== 0) {
         styles.root.height = state.textAreaHeight + "px";
     }
 
@@ -417,22 +417,25 @@ TextFieldPrototype.render = function() {
     if (!has(props, "valueLink")) {
         inputProps.onChange = this.onChange;
     }
+
     if (child) {
         children[children.length] = virt.cloneView(child, extend(inputProps, child.props, {
             style: extend(inputProps.style, child.props.style)
         }));
     } else {
-        children[children.length] = props.multiLine ? (
-            virt.createView(TextArea, extend(inputProps, props, {
-                style: extend(inputProps.style, props.style),
-                rows: props.rows,
-                onHeightChange: this.onTextAreaHeightChange,
-                textareaStyle: styles.textarea
-            }))
-        ) : (
-            virt.createView("input", extend(inputProps, props, {
-                style: extend(inputProps.style, props.style)
-            }))
+        children[children.length] = (
+            props.multiLine ? (
+                virt.createView(TextArea, extend(inputProps, props, {
+                    style: extend(inputProps.style, props.style),
+                    rows: props.rows,
+                    onHeightChange: this.onTextAreaHeightChange,
+                    textareaStyle: styles.textarea
+                }))
+            ) : (
+                virt.createView("input", extend(inputProps, props, {
+                    style: extend(inputProps.style, props.style)
+                }))
+            )
         );
     }
 

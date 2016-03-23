@@ -3,10 +3,12 @@ var virt = require("virt"),
     propTypes = require("prop_types"),
     css = require("css"),
     extend = require("extend"),
+    emptyFunction = require("empty_function"),
     requestAnimationFrame = require("request_animation_frame");
 
 
-var TextAreaPrototype;
+var reEOL = /\r\n|\r|\n/,
+    TextAreaPrototype;
 
 
 module.exports = TextArea;
@@ -16,9 +18,7 @@ function TextArea(props, children, context) {
 
     virt.Component.call(this, props, children, context);
 
-    this.state = {
-        height: props.rows * 24
-    };
+    this.__height = props.rows * 24;
 }
 virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
 
@@ -29,6 +29,7 @@ TextArea.propTypes = {
 };
 
 TextArea.defaultProps = {
+    onHeightChange: emptyFunction,
     rows: 1
 };
 
@@ -44,7 +45,7 @@ TextAreaPrototype.componentDidUpdate = function(prevProps) {
 
     if (prevProps.value !== value) {
         requestAnimationFrame(function onRequestAnimationFrame() {
-            _this.__syncHeightWithShadow(value);
+            _this.__getHeight(value);
         });
     }
 };
@@ -52,52 +53,27 @@ TextAreaPrototype.componentDidUpdate = function(prevProps) {
 TextAreaPrototype.setValue = function(value, callback) {
     var _this = this;
 
-    this.__syncHeightWithShadow(value, null, function onSyncHeightWithShadow() {
-        _this.refs.textareaInput.setValue(value, callback);
+    this.refs.textareaInput.setValue(value, function onSetValue(error) {
+        if (error) {
+            callback && callback(error);
+        } else {
+            _this.__getHeight(value);
+        }
     });
+};
+
+TextAreaPrototype.__getHeight = function(value) {
+    var rows = value.split(reEOL).length;
+    newHeight = rows * 24;
+
+    if (this.__height !== newHeight) {
+        this.__height = newHeight;
+        this.props.onHeightChange(newHeight);
+    }
 };
 
 TextAreaPrototype.__getInput = function() {
     return this.refs.textareaInput;
-};
-
-TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
-    var _this = this;
-
-    function onSetValue(error) {
-        requestAnimationFrame(function onRequestAnimationFrame() {
-            var textareaShadow = _this.refs.textareaShadow;
-
-            if (!error && !!textareaShadow) {
-                textareaShadow.emitMessage("virt.getViewProperty", {
-                    id: textareaShadow.getInternalId(),
-                    property: "scrollHeight"
-                }, function onGetProperty(error, newHeight) {
-                    if (error) {
-                        callback && callback(error);
-                    } else {
-                        if (_this.state.height !== newHeight) {
-                            if (_this.props.onHeightChange) {
-                                _this.props.onHeightChange(e, newHeight);
-                            }
-                            _this.setState({
-                                height: newHeight
-                            });
-                        }
-                        callback && callback();
-                    }
-                });
-            } else {
-                callback(error);
-            }
-        });
-    }
-
-    if (newValue !== undefined) {
-        this.refs.textareaShadow.setValue(newValue, false, onSetValue);
-    } else {
-        onSetValue();
-    }
 };
 
 TextAreaPrototype.getStyles = function() {
@@ -140,22 +116,13 @@ TextAreaPrototype.render = function() {
                 className: "virt-ui-TextField-TextArea",
                 style: props.style
             },
-            virt.createView("textarea", {
-                ref: "textareaShadow",
-                style: styles.textareaStyle,
-                tabIndex: "-1",
-                rows: props.rows,
-                defaultValue: props.defaultValue,
-                readOnly: true,
-                value: props.value,
-                valueLink: props.valueLink
-            }),
             virt.createView("textarea", extend({}, props, {
                 ref: "textareaInput",
                 rows: props.rows,
-                style: extend({}, styles.root, {
-                    height: this.state.height + "px"
-                }, props.textareaStyle)
+                defaultValue: props.defaultValue,
+                value: props.value,
+                valueLink: props.valueLink,
+                style: extend({}, styles.root, props.textareaStyle)
             }))
         )
     );

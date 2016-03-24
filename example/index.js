@@ -310,12 +310,11 @@ function TextField(props, children, context) {
     this.state = {
         focus: false,
         errorText: props.errorText,
-        textAreaHeight: 0,
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
-    this.onTextAreaHeightChange = function onTextAreaHeightChange(height) {
-        return _this.__onTextAreaHeightChange(height);
+    this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
+        return _this.__onTextAreaHeightChange(e, height);
     };
     this.onChange = function onChange(e) {
         return _this.__onChange(e);
@@ -420,7 +419,11 @@ TextFieldPrototype.setValue = function(newValue, callback) {
         hasValue: checkHasValue(newValue)
     });
 
-    this.__getInput().setValue(newValue, callback);
+    if (this.props.multiLine) {
+        this.refs[this.__getRef()].setValue(newValue, callback);
+    } else {
+        this.__getInput().setValue(newValue, callback);
+    }
 };
 
 TextFieldPrototype.getValue = function(callback) {
@@ -453,7 +456,7 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
     this.setState(newState);
 };
 
-TextFieldPrototype.__onTextAreaHeightChange = function(height) {
+TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
     var newHeight = height + 24;
 
     if (this.props.floatingLabelText) {
@@ -464,8 +467,10 @@ TextFieldPrototype.__onTextAreaHeightChange = function(height) {
         this.props.onHeightChange(newHeight);
     }
 
-    this.setState({
-        textAreaHeight: newHeight
+    this.emitMessage("virt.setViewStyleProperty", {
+        id: this.getInternalId(),
+        property: "height",
+        value: newHeight + "px"
     });
 };
 
@@ -494,9 +499,13 @@ TextFieldPrototype.__onInputBlur = function(e) {
 TextFieldPrototype.__onChange = function(e) {
     var _this = this;
 
+    e.persist();
+
     e.componentTarget.getValue(function onGetValue(error, value) {
         var child = _this.children[0],
             props = _this.props;
+
+        e.value = value;
 
         if (!error) {
             if (child && child.props.onChange) {
@@ -663,10 +672,6 @@ TextFieldPrototype.getStyles = function() {
     if (state.errorText) {
         styles.focusUnderline.borderColor = palette.errorColor;
         css.transform(styles.focusUnderline, "scaleX(1)");
-    }
-
-    if (state.textAreaHeight !== 0) {
-        styles.root.height = state.textAreaHeight + "px";
     }
 
     return styles;
@@ -5105,6 +5110,7 @@ InputPrototype.__setValue = function(value, focus, callback) {
     }
     this.emitMessage("virt.dom.Input.setValue", {
         id: this.getInternalId(),
+        focus: focus,
         value: value
     }, callback);
 };
@@ -5281,6 +5287,7 @@ TextAreaPrototype.__setValue = function(value, focus, callback) {
     }
     this.emitMessage("virt.dom.TextArea.setValue", {
         id: this.getInternalId(),
+        focus: focus,
         value: value
     }, callback);
 };
@@ -5431,12 +5438,31 @@ nodeHandlers["virt.getViewProperty"] = function(data, callback) {
         callback(new Error("getViewDimensions: No DOM node found with id " + data.id));
     }
 };
-
 nodeHandlers["virt.setViewProperty"] = function(data, callback) {
     var node = findDOMNode(data.id);
 
     if (node) {
         node[data.property] = data.value;
+        callback(undefined);
+    } else {
+        callback(new Error("getViewDimensions: No DOM node found with id " + data.id));
+    }
+};
+
+nodeHandlers["virt.getViewStyleProperty"] = function(data, callback) {
+    var node = findDOMNode(data.id);
+
+    if (node) {
+        callback(undefined, node.style[data.property]);
+    } else {
+        callback(new Error("getViewDimensions: No DOM node found with id " + data.id));
+    }
+};
+nodeHandlers["virt.setViewStyleProperty"] = function(data, callback) {
+    var node = findDOMNode(data.id);
+
+    if (node) {
+        node.style[data.property] = data.value;
         callback(undefined);
     } else {
         callback(new Error("getViewDimensions: No DOM node found with id " + data.id));
@@ -5944,7 +5970,7 @@ sharedInputHandlers.getValue = function(data, callback) {
 
 sharedInputHandlers.setValue = function(data, callback) {
     var node = findDOMNode(data.id),
-        origValue, value, focus, caret;
+        origValue, value, focus, caret, end, origLength;
 
     if (node) {
         origValue = node.value;
@@ -5956,8 +5982,13 @@ sharedInputHandlers.setValue = function(data, callback) {
                 caret = domCaret.get(node);
             }
             node.value = value;
-            if (focus && caret.start !== origValue.length) {
-                domCaret.set(node, caret.start, caret.end);
+            if (focus) {
+                origLength = origValue.length;
+                end = caret.end;
+                
+                if (end < origLength) {
+                    domCaret.set(node, caret.start, caret.end);
+                }
             }
         }
         callback();
@@ -8423,6 +8454,7 @@ SyntheticEventPrototype.destructor = function() {
     this.returnValue = null;
     this.isTrusted = null;
     this.isPersistent = null;
+    this.value = null;
 };
 
 SyntheticEventPrototype.destroy = function() {
@@ -10566,13 +10598,12 @@ function(require, exports, module, undefined, global) {
 var virt = require(1),
     has = require(23),
     propTypes = require(195),
-    css = require(196),
     extend = require(25),
     emptyFunction = require(36),
-    requestAnimationFrame = require(227);
+    isNullOrUndefined = require(21);
 
 
-var reEOL = /\r\n|\r|\n/,
+var ROWS_HEIGHT = 24,
     TextAreaPrototype;
 
 
@@ -10580,16 +10611,24 @@ module.exports = TextArea;
 
 
 function TextArea(props, children, context) {
+    var _this = this;
 
     virt.Component.call(this, props, children, context);
 
-    this.__height = props.rows * 24;
+    this.state = {
+        height: props.rows * ROWS_HEIGHT
+    };
+
+    this.onChange = function(e) {
+        return _this.__onChange(e);
+    };
 }
 virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
 
 TextArea.propTypes = {
     onHeightChange: propTypes.func,
     textareaStyle: propTypes.object,
+    rowsMax: propTypes.number,
     rows: propTypes.number
 };
 
@@ -10601,22 +10640,11 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
-    var _this = this;
-
-    requestAnimationFrame(function onRequestAnimationFrame() {
-        _this.setValue(_this.props.value);
-    });
+    this.setValue(this.props.value);
 };
 
-TextAreaPrototype.componentDidUpdate = function(prevProps) {
-    var _this = this,
-        value = this.props.value;
-
-    if (prevProps.value !== value) {
-        requestAnimationFrame(function onRequestAnimationFrame() {
-            _this.__getHeight(value);
-        });
-    }
+TextAreaPrototype.componentWillReceiveProps = function() {
+    this.setValue(this.props.value);
 };
 
 TextAreaPrototype.setValue = function(value, callback) {
@@ -10626,19 +10654,76 @@ TextAreaPrototype.setValue = function(value, callback) {
         if (error) {
             callback && callback(error);
         } else {
-            _this.__getHeight(value);
+            _this.__syncHeightWithShadow(value, null, callback);
         }
     });
 };
 
-TextAreaPrototype.__getHeight = function(value) {
-    var rows = value.split(reEOL).length,
-        newHeight = rows * 24;
+TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
+    var _this = this,
+        shadowInput = this.refs.shadowInput;
 
-    if (this.__height !== newHeight) {
-        this.__height = newHeight;
-        this.props.onHeightChange(newHeight);
+    function onSetValue(error) {
+        if (error) {
+            callback && callback(error);
+        } else {
+            shadowInput.emitMessage("virt.getViewProperty", {
+                id: shadowInput.getInternalId(),
+                property: "scrollHeight"
+            }, function onGetViewProperty(error, newHeight) {
+                var props;
+
+                if (error) {
+                    callback && callback(error);
+                } else {
+                    props = _this.props;
+
+                    if (props.rowsMax >= props.rows) {
+                        newHeight = Math.min(props.rowsMax * ROWS_HEIGHT, newHeight);
+                    }
+                    newHeight = Math.max(newHeight, ROWS_HEIGHT);
+
+                    if (_this.state.height !== newHeight) {
+                        _this.setState({
+                            height: newHeight
+                        });
+                        _this.props.onHeightChange(e, newHeight);
+                    }
+
+                    callback && callback();
+                }
+            });
+        }
     }
+
+    if (isNullOrUndefined(newValue)) {
+        onSetValue();
+    } else {
+        shadowInput.setValue(newValue, false, onSetValue);
+    }
+};
+
+TextAreaPrototype.__onChange = function(e) {
+    var _this = this,
+        props = this.props,
+        textareaInput = this.refs.textareaInput;
+
+    e.persist();
+
+    textareaInput.getValue(function onGetValue(error, value) {
+        if (!error) {
+            e.value = value;
+
+            _this.__syncHeightWithShadow(value, e);
+
+            if (props.onChange) {
+                props.onChange(e);
+            }
+            if (has(props, "valueLink")) {
+                props.valueLink.requestChange(value);
+            }
+        }
+    });
 };
 
 TextAreaPrototype.__getInput = function() {
@@ -10648,23 +10733,24 @@ TextAreaPrototype.__getInput = function() {
 TextAreaPrototype.getStyles = function() {
     var styles = {
         root: {
-            width: "100%",
-            resize: "none",
-            overflow: "hidden",
-            font: "inherit",
-            padding: 0
+            position: "relative"
         },
-        textareaStyle: {
-            position: "absolute",
+        textarea: {
+            height: this.state.height + "px",
             width: "100%",
             resize: "none",
-            overflow: "hidden",
             font: "inherit",
-            padding: 0
+            padding: "0px",
+            cursor: this.props.disabled ? "default" : "initial"
+        },
+        shadow: {
+            resize: "none",
+            overflow: "hidden",
+            visibility: "hidden",
+            position: "absolute",
+            height: "initial"
         }
     };
-
-    css.opacity(styles.textareaStyle, 0);
 
     return styles;
 };
@@ -10683,15 +10769,23 @@ TextAreaPrototype.render = function() {
     return (
         virt.createView("div", {
                 className: "virt-ui-TextField-TextArea",
-                style: props.style
+                style: extend(styles.root, props.style)
             },
-            virt.createView("textarea", extend({}, props, {
-                ref: "textareaInput",
+            virt.createView("textarea", {
+                ref: "shadowInput",
+                tabIndex: "-1",
                 rows: props.rows,
                 defaultValue: props.defaultValue,
                 value: props.value,
                 valueLink: props.valueLink,
-                style: extend({}, styles.root, props.textareaStyle)
+                readOnly: true,
+                style: styles.shadow
+            }),
+            virt.createView("textarea", extend({}, props, {
+                ref: "textareaInput",
+                rows: props.rows,
+                onChange: this.onChange,
+                style: extend({}, styles.textarea, props.textareaStyle)
             }))
         )
     );
@@ -13746,85 +13840,6 @@ var isNumber = require(22);
 module.exports = Number.isNaN || function isNaN(obj) {
     return isNumber(obj) && obj !== obj;
 };
-
-
-},
-function(require, exports, module, undefined, global) {
-/* ../../node_modules/request_animation_frame/src/index.js */
-
-var environment = require(99),
-    emptyFunction = require(36),
-    now = require(147);
-
-
-var window = environment.window,
-    requestAnimationFrame, lastTime;
-
-
-window.requestAnimationFrame = (
-    window.requestAnimationFrame ||
-    window.webkitRequestAnimationFrame ||
-    window.mozRequestAnimationFrame ||
-    window.oRequestAnimationFrame ||
-    window.msRequestAnimationFrame
-);
-
-window.cancelRequestAnimationFrame = (
-    window.cancelAnimationFrame ||
-    window.cancelRequestAnimationFrame ||
-
-    window.webkitCancelAnimationFrame ||
-    window.webkitCancelRequestAnimationFrame ||
-
-    window.mozCancelAnimationFrame ||
-    window.mozCancelRequestAnimationFrame ||
-
-    window.oCancelAnimationFrame ||
-    window.oCancelRequestAnimationFrame ||
-
-    window.msCancelAnimationFrame ||
-    window.msCancelRequestAnimationFrame
-);
-
-
-if (window.requestAnimationFrame) {
-    requestAnimationFrame = function requestAnimationFrame(callback, element) {
-        return window.requestAnimationFrame(callback, element);
-    };
-} else {
-    lastTime = 0;
-
-    requestAnimationFrame = function requestAnimationFrame(callback) {
-        var current = now(),
-            timeToCall = Math.max(0, 16 - (current - lastTime)),
-            id = global.setTimeout(
-                function runCallback() {
-                    callback(current + timeToCall);
-                },
-                timeToCall
-            );
-
-        lastTime = current + timeToCall;
-        return id;
-    };
-}
-
-
-if (window.cancelRequestAnimationFrame && window.requestAnimationFrame) {
-    requestAnimationFrame.cancel = function(id) {
-        return window.cancelRequestAnimationFrame(id);
-    };
-} else {
-    requestAnimationFrame.cancel = function(id) {
-        return global.clearTimeout(id);
-    };
-}
-
-
-requestAnimationFrame(emptyFunction);
-
-
-module.exports = requestAnimationFrame;
 
 
 }], null, void(0), (new Function("return this;"))()));

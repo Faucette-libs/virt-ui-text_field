@@ -23,12 +23,11 @@ function TextField(props, children, context) {
     this.state = {
         focus: false,
         errorText: props.errorText,
-        textAreaHeight: 0,
         hasValue: props.value || props.defaultValue || (props.valueLink && props.valueLink.value)
     };
 
-    this.onTextAreaHeightChange = function onTextAreaHeightChange(height) {
-        return _this.__onTextAreaHeightChange(height);
+    this.onTextAreaHeightChange = function onTextAreaHeightChange(e, height) {
+        return _this.__onTextAreaHeightChange(e, height);
     };
     this.onChange = function onChange(e) {
         return _this.__onChange(e);
@@ -133,7 +132,11 @@ TextFieldPrototype.setValue = function(newValue, callback) {
         hasValue: checkHasValue(newValue)
     });
 
-    this.__getInput().setValue(newValue, callback);
+    if (this.props.multiLine) {
+        this.refs[this.__getRef()].setValue(newValue, callback);
+    } else {
+        this.__getInput().setValue(newValue, callback);
+    }
 };
 
 TextFieldPrototype.getValue = function(callback) {
@@ -166,7 +169,7 @@ TextFieldPrototype.componentWillReceiveProps = function(nextProps, nextChildren)
     this.setState(newState);
 };
 
-TextFieldPrototype.__onTextAreaHeightChange = function(height) {
+TextFieldPrototype.__onTextAreaHeightChange = function(e, height) {
     var newHeight = height + 24;
 
     if (this.props.floatingLabelText) {
@@ -177,8 +180,10 @@ TextFieldPrototype.__onTextAreaHeightChange = function(height) {
         this.props.onHeightChange(newHeight);
     }
 
-    this.setState({
-        textAreaHeight: newHeight
+    this.emitMessage("virt.setViewStyleProperty", {
+        id: this.getInternalId(),
+        property: "height",
+        value: newHeight + "px"
     });
 };
 
@@ -207,9 +212,13 @@ TextFieldPrototype.__onInputBlur = function(e) {
 TextFieldPrototype.__onChange = function(e) {
     var _this = this;
 
+    e.persist();
+
     e.componentTarget.getValue(function onGetValue(error, value) {
         var child = _this.children[0],
             props = _this.props;
+
+        e.value = value;
 
         if (!error) {
             if (child && child.props.onChange) {
@@ -376,10 +385,6 @@ TextFieldPrototype.getStyles = function() {
     if (state.errorText) {
         styles.focusUnderline.borderColor = palette.errorColor;
         css.transform(styles.focusUnderline, "scaleX(1)");
-    }
-
-    if (state.textAreaHeight !== 0) {
-        styles.root.height = state.textAreaHeight + "px";
     }
 
     return styles;

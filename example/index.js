@@ -2616,11 +2616,10 @@ NodePrototype.__updateComponent = function(
     }
 
     transaction.queue.enqueue(function onUpdate() {
-        component.__mountState = componentState.UPDATED;
+        component.__mountState = componentState.MOUNTED;
         if (component.componentDidUpdate) {
             component.componentDidUpdate(prevProps, prevChildren, prevState, prevContext);
         }
-        component.__mountState = componentState.MOUNTED;
     });
 };
 
@@ -3702,7 +3701,6 @@ module.exports = keyMirror([
     "MOUNTING",
     "MOUNTED",
     "UPDATING",
-    "UPDATED",
     "UNMOUNTING",
     "UNMOUNTED"
 ]);
@@ -5280,9 +5278,6 @@ TextAreaPrototype.__setValue = function(value, focus, callback) {
     if (isFunction(focus)) {
         callback = focus;
         focus = void(0);
-    }
-    if (focus === true) {
-        throw "";
     }
     this.emitMessage("virt.dom.TextArea.setValue", {
         id: this.getInternalId(),
@@ -10606,7 +10601,11 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
-    this.setValue(this.props.value);
+    var _this = this;
+
+    requestAnimationFrame(function onRequestAnimationFrame() {
+        _this.setValue(_this.props.value);
+    });
 };
 
 TextAreaPrototype.componentDidUpdate = function(prevProps) {
@@ -10633,8 +10632,8 @@ TextAreaPrototype.setValue = function(value, callback) {
 };
 
 TextAreaPrototype.__getHeight = function(value) {
-    var rows = value.split(reEOL).length;
-    newHeight = rows * 24;
+    var rows = value.split(reEOL).length,
+        newHeight = rows * 24;
 
     if (this.__height !== newHeight) {
         this.__height = newHeight;

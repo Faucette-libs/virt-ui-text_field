@@ -36,7 +36,11 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
-    this.setValue(this.props.value);
+    var _this = this;
+
+    requestAnimationFrame(function onRequestAnimationFrame() {
+        _this.setValue(_this.props.value);
+    });
 };
 
 TextAreaPrototype.componentDidUpdate = function(prevProps) {
@@ -63,8 +67,8 @@ TextAreaPrototype.setValue = function(value, callback) {
 };
 
 TextAreaPrototype.__getHeight = function(value) {
-    var rows = value.split(reEOL).length;
-    newHeight = rows * 24;
+    var rows = value.split(reEOL).length,
+        newHeight = rows * 24;
 
     if (this.__height !== newHeight) {
         this.__height = newHeight;

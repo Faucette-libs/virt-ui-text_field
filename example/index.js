@@ -594,6 +594,8 @@ TextFieldPrototype.getStyles = function() {
             }
         };
 
+    css.userSelect(styles.input, "text");
+
     css.transition(styles.root, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
     css.transition(styles.error, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
 
@@ -10584,6 +10586,7 @@ function(require, exports, module, undefined, global) {
 /* ../../src/TextArea.js */
 
 var virt = require(1),
+    css = require(196),
     has = require(23),
     propTypes = require(195),
     extend = require(25),
@@ -10739,6 +10742,8 @@ TextAreaPrototype.getStyles = function() {
             height: "initial"
         }
     };
+
+    css.userSelect(styles.textarea, "text");
 
     return styles;
 };

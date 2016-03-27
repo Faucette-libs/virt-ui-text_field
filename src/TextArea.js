@@ -1,4 +1,5 @@
 var virt = require("virt"),
+    css = require("css"),
     has = require("has"),
     propTypes = require("prop_types"),
     extend = require("extend"),
@@ -154,6 +155,8 @@ TextAreaPrototype.getStyles = function() {
             height: "initial"
         }
     };
+
+    css.userSelect(styles.textarea, "text");
 
     return styles;
 };

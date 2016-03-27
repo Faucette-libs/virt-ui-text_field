@@ -319,6 +319,8 @@ TextFieldPrototype.getStyles = function() {
             }
         };
 
+    css.userSelect(styles.input, "text");
+
     css.transition(styles.root, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
     css.transition(styles.error, "all 450ms cubic-bezier(0.23, 1, 0.32, 1)");
 

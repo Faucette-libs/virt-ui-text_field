@@ -46,25 +46,13 @@ AppPrototype.getChildContext = function() {
 };
 
 AppPrototype.__onMultiLineChange = function(e) {
-    var _this = this;
-    
-    this.refs.multiLine.getValue(function onGetValue(error, value) {
-        if (!error) {
-            _this.setState({
-                multiLine: value
-            });
-        }
+    this.setState({
+        multiLine: e.value
     });
 };
 AppPrototype.__onMultiLine2Change = function(e) {
-    var _this = this;
-    
-    this.refs.multiLine2.getValue(function onGetValue(error, value) {
-        if (!error) {
-            _this.setState({
-                multiLine2: value
-            });
-        }
+    this.setState({
+        multiLine2: e.value
     });
 };
 

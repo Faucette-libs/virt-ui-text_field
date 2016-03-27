@@ -107,25 +107,13 @@ AppPrototype.getChildContext = function() {
 };
 
 AppPrototype.__onMultiLineChange = function(e) {
-    var _this = this;
-    
-    this.refs.multiLine.getValue(function onGetValue(error, value) {
-        if (!error) {
-            _this.setState({
-                multiLine: value
-            });
-        }
+    this.setState({
+        multiLine: e.value
     });
 };
 AppPrototype.__onMultiLine2Change = function(e) {
-    var _this = this;
-    
-    this.refs.multiLine2.getValue(function onGetValue(error, value) {
-        if (!error) {
-            _this.setState({
-                multiLine2: value
-            });
-        }
+    this.setState({
+        multiLine2: e.value
     });
 };
 
@@ -232,8 +220,8 @@ virt.consts = require(7);
 virt.getChildKey = require(8);
 virt.getRootIdFromId = require(9);
 
-virt.isAncestorIdOf = require(10),
-    virt.traverseAncestors = require(11);
+virt.isAncestorIdOf = require(10);
+virt.traverseAncestors = require(11);
 virt.traverseDescendants = require(12);
 virt.traverseTwoPhase = require(13);
 
@@ -5976,7 +5964,7 @@ sharedInputHandlers.setValue = function(data, callback) {
         origValue = node.value;
         value = data.value || "";
         focus = data.focus !== false;
-        
+
         if (value !== origValue) {
             if (focus) {
                 caret = domCaret.get(node);
@@ -5985,7 +5973,7 @@ sharedInputHandlers.setValue = function(data, callback) {
             if (focus) {
                 origLength = origValue.length;
                 end = caret.end;
-                
+
                 if (end < origLength) {
                     domCaret.set(node, caret.start, caret.end);
                 }
@@ -9352,7 +9340,7 @@ function getKeyCode(nativeEvent) {
 function getWhich(nativeEvent) {
     var type = nativeEvent.type;
 
-    return type === "keypress" ? getEventCharCode(event) : (
+    return type === "keypress" ? getEventCharCode(nativeEvent) : (
         type === "keydown" || type === "keyup" ? nativeEvent.keyCode : 0
     );
 }
@@ -10643,19 +10631,17 @@ TextAreaPrototype.componentDidMount = function() {
     this.setValue(this.props.value);
 };
 
-TextAreaPrototype.componentWillReceiveProps = function() {
-    this.setValue(this.props.value);
+TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
+    if (this.props.value !== nextProps.value) {
+        this.setValue(nextProps.value);
+    }
 };
 
 TextAreaPrototype.setValue = function(value, callback) {
     var _this = this;
 
-    this.refs.textareaInput.setValue(value, function onSetValue(error) {
-        if (error) {
-            callback && callback(error);
-        } else {
-            _this.__syncHeightWithShadow(value, null, callback);
-        }
+    this.__syncHeightWithShadow(value, null, function onSyncHeightWithShadow() {
+        _this.refs.textareaInput.setValue(value, callback);
     });
 };
 
@@ -10736,18 +10722,20 @@ TextAreaPrototype.getStyles = function() {
             position: "relative"
         },
         textarea: {
-            height: this.state.height + "px",
-            width: "100%",
-            resize: "none",
             font: "inherit",
+            width: "100%",
+            height: this.state.height + "px",
+            resize: "none",
             padding: "0px",
             cursor: this.props.disabled ? "default" : "initial"
         },
         shadow: {
+            font: "inherit",
             resize: "none",
             overflow: "hidden",
             visibility: "hidden",
             position: "absolute",
+            width: "100%",
             height: "initial"
         }
     };

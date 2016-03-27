@@ -46,19 +46,17 @@ TextAreaPrototype.componentDidMount = function() {
     this.setValue(this.props.value);
 };
 
-TextAreaPrototype.componentWillReceiveProps = function() {
-    this.setValue(this.props.value);
+TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
+    if (this.props.value !== nextProps.value) {
+        this.setValue(nextProps.value);
+    }
 };
 
 TextAreaPrototype.setValue = function(value, callback) {
     var _this = this;
 
-    this.refs.textareaInput.setValue(value, function onSetValue(error) {
-        if (error) {
-            callback && callback(error);
-        } else {
-            _this.__syncHeightWithShadow(value, null, callback);
-        }
+    this.__syncHeightWithShadow(value, null, function onSyncHeightWithShadow() {
+        _this.refs.textareaInput.setValue(value, callback);
     });
 };
 
@@ -139,18 +137,20 @@ TextAreaPrototype.getStyles = function() {
             position: "relative"
         },
         textarea: {
-            height: this.state.height + "px",
-            width: "100%",
-            resize: "none",
             font: "inherit",
+            width: "100%",
+            height: this.state.height + "px",
+            resize: "none",
             padding: "0px",
             cursor: this.props.disabled ? "default" : "initial"
         },
         shadow: {
+            font: "inherit",
             resize: "none",
             overflow: "hidden",
             visibility: "hidden",
             position: "absolute",
+            width: "100%",
             height: "initial"
         }
     };

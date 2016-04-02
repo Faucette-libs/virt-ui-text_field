@@ -1,6 +1,7 @@
 var virt = require("virt"),
     css = require("css"),
     has = require("has"),
+    debounce = require("debounce"),
     propTypes = require("prop_types"),
     extend = require("extend"),
     emptyFunction = require("empty_function"),
@@ -26,6 +27,9 @@ function TextArea(props, children, context) {
     this.onChange = function(e) {
         return _this.__onChange(e);
     };
+    this.onResize = debounce(function(e) {
+        return _this.__onResize(e);
+    }, 100);
 }
 virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
 
@@ -44,7 +48,14 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
+    this.onGlobalEvent("onResize", this.onResize);
+    this.onGlobalEvent("onOrientationChange", this.onResize);
     this.setValue(this.props.value);
+};
+
+TextAreaPrototype.componentWillUnmount = function() {
+    this.offGlobalEvent("onResize", this.onResize);
+    this.offGlobalEvent("onOrientationChange", this.onResize);
 };
 
 TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
@@ -61,6 +72,11 @@ TextAreaPrototype.setValue = function(value, callback) {
     });
 };
 
+TextAreaPrototype.__onResize = function() {
+    console.log();
+    this.setValue(this.props.value);
+};
+
 TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     var _this = this,
         shadowInput = this.refs.shadowInput;
@@ -69,31 +85,8 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
         if (error) {
             callback && callback(error);
         } else {
-            shadowInput.emitMessage("virt.getViewProperty", {
-                id: shadowInput.getInternalId(),
-                property: "scrollHeight"
-            }, function onGetViewProperty(error, newHeight) {
-                var props;
-
-                if (error) {
-                    callback && callback(error);
-                } else {
-                    props = _this.props;
-
-                    if (props.rowsMax >= props.rows) {
-                        newHeight = Math.min(props.rowsMax * ROWS_HEIGHT, newHeight);
-                    }
-                    newHeight = Math.max(newHeight, ROWS_HEIGHT);
-
-                    if (_this.state.height !== newHeight) {
-                        _this.setState({
-                            height: newHeight
-                        });
-                        _this.props.onHeightChange(e, newHeight);
-                    }
-
-                    callback && callback();
-                }
+            setTimeout(function onSetTimeout() {
+                _this.__setHeight(e, callback);
             });
         }
     }
@@ -103,6 +96,38 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     } else {
         shadowInput.setValue(newValue, false, onSetValue);
     }
+};
+
+TextAreaPrototype.__setHeight = function(e, callback) {
+    var _this = this,
+        shadowInput = this.refs.shadowInput;
+
+    shadowInput.emitMessage("virt.getViewProperty", {
+        id: shadowInput.getInternalId(),
+        property: "scrollHeight"
+    }, function onGetViewProperty(error, newHeight) {
+        var props;
+
+        if (error) {
+            callback && callback(error);
+        } else {
+            props = _this.props;
+
+            if (props.rowsMax >= props.rows) {
+                newHeight = Math.min(props.rowsMax * ROWS_HEIGHT, newHeight);
+            }
+            newHeight = Math.max(newHeight, ROWS_HEIGHT);
+
+            if (_this.state.height !== newHeight) {
+                _this.setState({
+                    height: newHeight
+                });
+                _this.props.onHeightChange(e, newHeight);
+            }
+
+            callback && callback();
+        }
+    });
 };
 
 TextAreaPrototype.__onChange = function(e) {

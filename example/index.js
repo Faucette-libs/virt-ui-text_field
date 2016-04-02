@@ -5074,7 +5074,7 @@ function Input_uncheckSiblings(input, siblings) {
             (props = sibling.props) &&
             props.type === "radio"
         ) {
-            props.checked = !props.checked;
+            props.checked = false;
             sibling.__setChecked(props.checked);
         }
     }
@@ -5089,20 +5089,28 @@ InputPrototype.__setChecked = function(checked, callback) {
 
 InputPrototype.__getValue = function(callback) {
     this.emitMessage("virt.dom.Input.getValue", {
-        id: this.getInternalId()
+        id: this.getInternalId(),
+        type: this.props.type
     }, callback);
 };
 
 InputPrototype.__setValue = function(value, focus, callback) {
+    var type = this.props.type;
+
     if (isFunction(focus)) {
         callback = focus;
         focus = void(0);
     }
-    this.emitMessage("virt.dom.Input.setValue", {
-        id: this.getInternalId(),
-        focus: focus,
-        value: value
-    }, callback);
+
+    if (type === "radio" || type === "checkbox") {
+        this.__setChecked(value, callback);
+    } else {
+        this.emitMessage("virt.dom.Input.setValue", {
+            id: this.getInternalId(),
+            focus: focus,
+            value: value
+        }, callback);
+    }
 };
 
 InputPrototype.__getSelection = function(callback) {
@@ -5552,7 +5560,9 @@ inputHandlers["virt.dom.Input.setChecked"] = function(data, callback) {
     if (node) {
         if (data.checked) {
             node.setAttribute("checked", true);
+            node.checked = true;
         } else {
+            node.checked = false;
             node.removeAttribute("checked");
         }
         callback();
@@ -5952,7 +5962,11 @@ sharedInputHandlers.getValue = function(data, callback) {
     var node = findDOMNode(data.id);
 
     if (node) {
-        callback(undefined, node.value);
+        if (data.type === "radio" || data.type === "checkbox") {
+            callback(undefined, node.checked);
+        } else {
+            callback(undefined, node.value);
+        }
     } else {
         callback(new Error("getValue: No DOM node found with id " + data.id));
     }
@@ -7069,7 +7083,11 @@ EventHandlerPrototype.nativeListenTo = function(topLevelType) {
         isListening = this.__isListening;
 
     if (!isListening[topLevelType]) {
-        if (topLevelType === topLevelTypes.topWheel) {
+        if (topLevelType === topLevelTypes.topResize) {
+            this.trapBubbledEvent(topLevelTypes.topResize, "resize", window);
+        } else if (topLevelType === topLevelTypes.topOrientationChange) {
+            this.trapBubbledEvent(topLevelTypes.topOrientationChange, "orientationchange", window);
+        } else if (topLevelType === topLevelTypes.topWheel) {
             if (isEventSupported("wheel")) {
                 this.trapBubbledEvent(topLevelTypes.topWheel, "wheel", document);
             } else if (isEventSupported("mousewheel")) {
@@ -10588,6 +10606,7 @@ function(require, exports, module, undefined, global) {
 var virt = require(1),
     css = require(196),
     has = require(23),
+    debounce = require(227),
     propTypes = require(195),
     extend = require(25),
     emptyFunction = require(36),
@@ -10613,6 +10632,9 @@ function TextArea(props, children, context) {
     this.onChange = function(e) {
         return _this.__onChange(e);
     };
+    this.onResize = debounce(function(e) {
+        return _this.__onResize(e);
+    }, 100);
 }
 virt.Component.extend(TextArea, "virt-ui-TextField-TextArea");
 
@@ -10631,7 +10653,14 @@ TextArea.defaultProps = {
 TextAreaPrototype = TextArea.prototype;
 
 TextAreaPrototype.componentDidMount = function() {
+    this.onGlobalEvent("onResize", this.onResize);
+    this.onGlobalEvent("onOrientationChange", this.onResize);
     this.setValue(this.props.value);
+};
+
+TextAreaPrototype.componentWillUnmount = function() {
+    this.offGlobalEvent("onResize", this.onResize);
+    this.offGlobalEvent("onOrientationChange", this.onResize);
 };
 
 TextAreaPrototype.componentWillReceiveProps = function(nextProps) {
@@ -10648,6 +10677,11 @@ TextAreaPrototype.setValue = function(value, callback) {
     });
 };
 
+TextAreaPrototype.__onResize = function() {
+    console.log();
+    this.setValue(this.props.value);
+};
+
 TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     var _this = this,
         shadowInput = this.refs.shadowInput;
@@ -10656,31 +10690,8 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
         if (error) {
             callback && callback(error);
         } else {
-            shadowInput.emitMessage("virt.getViewProperty", {
-                id: shadowInput.getInternalId(),
-                property: "scrollHeight"
-            }, function onGetViewProperty(error, newHeight) {
-                var props;
-
-                if (error) {
-                    callback && callback(error);
-                } else {
-                    props = _this.props;
-
-                    if (props.rowsMax >= props.rows) {
-                        newHeight = Math.min(props.rowsMax * ROWS_HEIGHT, newHeight);
-                    }
-                    newHeight = Math.max(newHeight, ROWS_HEIGHT);
-
-                    if (_this.state.height !== newHeight) {
-                        _this.setState({
-                            height: newHeight
-                        });
-                        _this.props.onHeightChange(e, newHeight);
-                    }
-
-                    callback && callback();
-                }
+            setTimeout(function onSetTimeout() {
+                _this.__setHeight(e, callback);
             });
         }
     }
@@ -10690,6 +10701,38 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
     } else {
         shadowInput.setValue(newValue, false, onSetValue);
     }
+};
+
+TextAreaPrototype.__setHeight = function(e, callback) {
+    var _this = this,
+        shadowInput = this.refs.shadowInput;
+
+    shadowInput.emitMessage("virt.getViewProperty", {
+        id: shadowInput.getInternalId(),
+        property: "scrollHeight"
+    }, function onGetViewProperty(error, newHeight) {
+        var props;
+
+        if (error) {
+            callback && callback(error);
+        } else {
+            props = _this.props;
+
+            if (props.rowsMax >= props.rows) {
+                newHeight = Math.min(props.rowsMax * ROWS_HEIGHT, newHeight);
+            }
+            newHeight = Math.max(newHeight, ROWS_HEIGHT);
+
+            if (_this.state.height !== newHeight) {
+                _this.setState({
+                    height: newHeight
+                });
+                _this.props.onHeightChange(e, newHeight);
+            }
+
+            callback && callback();
+        }
+    });
 };
 
 TextAreaPrototype.__onChange = function(e) {
@@ -13833,6 +13876,99 @@ var isNumber = require(22);
 module.exports = Number.isNaN || function isNaN(obj) {
     return isNumber(obj) && obj !== obj;
 };
+
+
+},
+function(require, exports, module, undefined, global) {
+/* ../../node_modules/debounce/src/index.js */
+
+var apply = require(228);
+
+
+module.exports = debounce;
+
+
+function debounce(func, wait, immediate) {
+    var timeout = null;
+
+    return function debounceFn() {
+        var context = this,
+            args = arguments,
+            callNow = immediate && !timeout,
+            later;
+
+        if (callNow) {
+            apply(func, args, context);
+        } else {
+            later = function later() {
+                timeout = null;
+                if (!immediate) {
+                    apply(func, args, context);
+                }
+            };
+
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        }
+    };
+}
+
+
+},
+function(require, exports, module, undefined, global) {
+/* ../../node_modules/debounce/node_modules/apply/src/index.js */
+
+var isNullOrUndefined = require(21);
+
+
+module.exports = apply;
+
+
+function apply(fn, args, thisArg) {
+    if (isNullOrUndefined(thisArg)) {
+        return applyNoThisArg(fn, args);
+    } else {
+        return applyThisArg(fn, args, thisArg);
+    }
+}
+
+function applyNoThisArg(fn, args) {
+    switch (args.length) {
+        case 0:
+            return fn();
+        case 1:
+            return fn(args[0]);
+        case 2:
+            return fn(args[0], args[1]);
+        case 3:
+            return fn(args[0], args[1], args[2]);
+        case 4:
+            return fn(args[0], args[1], args[2], args[3]);
+        case 5:
+            return fn(args[0], args[1], args[2], args[3], args[4]);
+        default:
+            return fn.apply(null, args);
+    }
+}
+
+function applyThisArg(fn, args, thisArg) {
+    switch (args.length) {
+        case 0:
+            return fn.call(thisArg);
+        case 1:
+            return fn.call(thisArg, args[0]);
+        case 2:
+            return fn.call(thisArg, args[0], args[1]);
+        case 3:
+            return fn.call(thisArg, args[0], args[1], args[2]);
+        case 4:
+            return fn.call(thisArg, args[0], args[1], args[2], args[3]);
+        case 5:
+            return fn.call(thisArg, args[0], args[1], args[2], args[3], args[4]);
+        default:
+            return fn.apply(thisArg, args);
+    }
+}
 
 
 }], null, void(0), (new Function("return this;"))()));

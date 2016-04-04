@@ -10690,9 +10690,7 @@ TextAreaPrototype.__syncHeightWithShadow = function(newValue, e, callback) {
         if (error) {
             callback && callback(error);
         } else {
-            setTimeout(function onSetTimeout() {
-                _this.__setHeight(e, callback);
-            });
+            _this.__setHeight(e, callback);
         }
     }
 

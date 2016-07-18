@@ -1,11 +1,11 @@
-var virt = require("virt"),
-    css = require("css"),
-    has = require("has"),
-    debounce = require("debounce"),
-    propTypes = require("prop_types"),
-    extend = require("extend"),
-    emptyFunction = require("empty_function"),
-    isNullOrUndefined = require("is_null_or_undefined");
+var virt = require("@nathanfaucett/virt"),
+    css = require("@nathanfaucett/css"),
+    has = require("@nathanfaucett/has"),
+    debounce = require("@nathanfaucett/debounce"),
+    propTypes = require("@nathanfaucett/prop_types"),
+    extend = require("@nathanfaucett/extend"),
+    emptyFunction = require("@nathanfaucett/empty_function"),
+    isNullOrUndefined = require("@nathanfaucett/is_null_or_undefined");
 
 
 var ROWS_HEIGHT = 24,
@@ -73,7 +73,6 @@ TextAreaPrototype.setValue = function(value, callback) {
 };
 
 TextAreaPrototype.__onResize = function() {
-    console.log();
     this.setValue(this.props.value);
 };
 

@@ -1,9 +1,9 @@
-var virt = require("virt"),
-    has = require("has"),
-    uuid = require("uuid"),
-    propTypes = require("prop_types"),
-    css = require("css"),
-    extend = require("extend"),
+var virt = require("@nathanfaucett/virt"),
+    has = require("@nathanfaucett/has"),
+    uuid = require("@nathanfaucett/uuid"),
+    propTypes = require("@nathanfaucett/prop_types"),
+    css = require("@nathanfaucett/css"),
+    extend = require("@nathanfaucett/extend"),
     TextArea = require("./TextArea");
 
 

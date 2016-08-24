@@ -45,7 +45,7 @@ function TextField(props, children, context) {
 virt.Component.extend(TextField, "virt-ui-TextField");
 
 TextField.contextTypes = {
-    muiTheme: propTypes.implement({
+    theme: propTypes.implement({
         fontFamily: propTypes.string.isRequired,
         palette: propTypes.implement({
             primaryTextColor: propTypes.string.isRequired,
@@ -264,8 +264,8 @@ TextFieldPrototype.__isControlled = function() {
 TextFieldPrototype.getStyles = function() {
     var state = this.state,
         props = this.props,
-        muiTheme = this.context.muiTheme,
-        palette = muiTheme.palette,
+        theme = this.context.theme,
+        palette = theme.palette,
         styles = {
             root: {
                 fontSize: "16px",
@@ -274,7 +274,7 @@ TextFieldPrototype.getStyles = function() {
                 height: ((props.rows - 1) * 24 + (props.floatingLabelText ? 72 : 48)) + "px",
                 display: "inline-block",
                 position: "relative",
-                fontFamily: muiTheme.fontFamily
+                fontFamily: theme.fontFamily
             },
             error: {
                 position: "absolute",

@@ -25,8 +25,8 @@
     "@nathanfaucett/virt-dom": "^0.0.12"
   },
   "dependencies": {
-    "@nathanfaucett/css": "^0.0.2"
-    "@nathanfaucett/extend": "^0.0.2"
+    "@nathanfaucett/css": "^0.0.2",
+    "@nathanfaucett/extend": "^0.0.2",
     "@nathanfaucett/has": "^0.0.1",
     "@nathanfaucett/debounce": "^0.0.1",
     "@nathanfaucett/prop_types": "^0.0.1",
